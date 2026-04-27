@@ -1,81 +1,44 @@
 'use client'
 
-import { useState } from 'react'
-import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 
-export default function AuthPage() {
+export default function Landing() {
   const router = useRouter()
 
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [isLogin, setIsLogin] = useState(true)
-  const [message, setMessage] = useState('')
-
-  const handleAuth = async () => {
-    if (!email || !password) return setMessage('Fill all fields')
-
-    if (isLogin) {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      })
-
-      if (error) return setMessage(error.message)
-      router.push('/dashboard')
-    } else {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password
-      })
-
-      if (error) return setMessage(error.message)
-      setMessage('Signup successful. Now login.')
-      setIsLogin(true)
-    }
-  }
-
   return (
-    <div className="flex h-screen items-center justify-center bg-gray-100">
-      <div className="bg-white p-6 rounded-xl shadow-md w-80">
-        <h2 className="text-xl font-semibold mb-4 text-center">
-          {isLogin ? 'Login' : 'Sign Up'}
-        </h2>
+    <div className="min-h-screen bg-gradient-to-b from-white to-gray-100 flex flex-col items-center justify-center px-6">
 
-        <input
-          className="w-full mb-3 p-2 border rounded"
-          placeholder="Email"
-          onChange={(e) => setEmail(e.target.value)}
-        />
+      <h1 className="text-3xl font-bold text-center mb-4">
+        Concept Gap Analyzer
+      </h1>
 
-        <input
-          type="password"
-          className="w-full mb-3 p-2 border rounded"
-          placeholder="Password"
-          onChange={(e) => setPassword(e.target.value)}
-        />
+      <p className="text-center text-gray-600 mb-6 max-w-md">
+        Track your mistakes, identify weak concepts, and improve faster.
+        This tool doesn’t just track progress — it diagnoses your thinking.
+      </p>
 
+      <div className="flex gap-3">
         <button
-          onClick={handleAuth}
-          className="w-full bg-black text-white p-2 rounded"
+          onClick={() => router.push('/login')}
+          className="bg-black text-white px-5 py-2 rounded-lg"
         >
-          {isLogin ? 'Login' : 'Sign Up'}
+          Login
         </button>
 
-        <p className="text-sm mt-3 text-center text-gray-600">
-          {isLogin ? 'No account?' : 'Already have account?'}{' '}
-          <span
-            className="text-blue-500 cursor-pointer"
-            onClick={() => setIsLogin(!isLogin)}
-          >
-            {isLogin ? 'Sign up' : 'Login'}
-          </span>
-        </p>
-
-        {message && (
-          <p className="text-red-500 text-sm mt-2 text-center">{message}</p>
-        )}
+        <button
+          onClick={() => router.push('/signup')}
+          className="border px-5 py-2 rounded-lg"
+        >
+          Sign Up
+        </button>
       </div>
+
+      <div className="mt-10 text-sm text-gray-500 text-center">
+        ✔ Find weak topics automatically <br />
+        ✔ Track mistake patterns <br />
+        ✔ Improve efficiently
+      </div>
+
     </div>
   )
 }

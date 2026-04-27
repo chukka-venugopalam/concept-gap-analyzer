@@ -59,8 +59,8 @@ export default function Dashboard() {
     loadData()
   }
 
-  // 🔥 ANALYSIS ENGINE
-  const analysis = Object.entries(
+  // 🔥 ANALYSIS
+  const stats = Object.entries(
     data.reduce((acc: any, item) => {
       if (!acc[item.topic]) {
         acc[item.topic] = {
@@ -75,7 +75,7 @@ export default function Dashboard() {
       if (item.result) acc[item.topic].correct++
       acc[item.topic].time += item.time_taken
 
-      if (!item.result && acc[item.topic].mistakes[item.mistake_type] !== undefined) {
+      if (!item.result) {
         acc[item.topic].mistakes[item.mistake_type]++
       }
 
@@ -83,90 +83,97 @@ export default function Dashboard() {
     }, {})
   )
 
+  // 🔥 STREAK
+  const today = new Date().toDateString()
+  const streak = data.filter(d =>
+    new Date(d.created_at).toDateString() === today
+  ).length
+
   return (
-  <div className="min-h-screen bg-gray-50 p-6">
-    <div className="max-w-xl mx-auto bg-white p-6 rounded-xl shadow">
+    <div className="min-h-screen bg-gray-50 p-4 flex justify-center">
+      <div className="w-full max-w-md space-y-4">
 
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">Dashboard</h2>
-        <button
-          onClick={async () => {
-            await signOut()
-            router.push('/')
-          }}
-          className="text-sm text-red-500"
-        >
-          Logout
-        </button>
-      </div>
-
-      <div className="space-y-3">
-        <input
-          className="w-full p-2 border rounded"
-          placeholder="Topic"
-          value={topic}
-          onChange={(e) => setTopic(e.target.value)}
-        />
-
-        <input
-          className="w-full p-2 border rounded"
-          type="number"
-          placeholder="Time (sec)"
-          value={time}
-          onChange={(e) => setTime(Number(e.target.value))}
-        />
-
-        <div className="flex gap-2">
-          <button onClick={() => setResult(true)} className="flex-1 bg-green-100 p-2 rounded">Correct</button>
-          <button onClick={() => setResult(false)} className="flex-1 bg-red-100 p-2 rounded">Wrong</button>
+        {/* Header */}
+        <div className="flex justify-between items-center">
+          <h2 className="text-lg font-semibold">Dashboard</h2>
+          <button onClick={async () => { await signOut(); router.push('/') }}>
+            Logout
+          </button>
         </div>
 
-        <div className="flex gap-2 flex-wrap">
-          {['concept', 'silly', 'time', 'guess'].map((m) => (
-            <button
-              key={m}
-              onClick={() => setMistake(m)}
-              className="bg-gray-100 px-3 py-1 rounded text-sm"
-            >
-              {m}
-            </button>
-          ))}
+        {/* Streak */}
+        <div className="bg-white p-3 rounded shadow text-sm">
+          🔥 Today Attempts: {streak}
         </div>
 
-        <button
-          onClick={handleSubmit}
-          className="w-full bg-black text-white p-2 rounded"
-        >
-          Save
-        </button>
-      </div>
+        {/* Input */}
+        <div className="bg-white p-4 rounded shadow space-y-3">
+          <input
+            className="w-full p-2 border rounded"
+            placeholder="Topic"
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+          />
 
-      <hr className="my-6" />
+          <input
+            type="number"
+            className="w-full p-2 border rounded"
+            placeholder="Time (sec)"
+            value={time}
+            onChange={(e) => setTime(Number(e.target.value))}
+          />
 
-      <h3 className="font-semibold mb-2">Insights</h3>
-
-      {analysis.map(([topic, val]: any) => {
-        const acc = Math.round((val.correct / val.total) * 100)
-        const avgTime = Math.round(val.time / val.total)
-
-        let mainIssue = Object.entries(val.mistakes).sort((a: any, b: any) => b[1] - a[1])[0][0]
-
-        return (
-          <div key={topic} className="p-3 border rounded mb-2">
-            <div className="font-medium">{topic}</div>
-            <div className="text-sm text-gray-600">
-              Accuracy: {acc}% | Avg Time: {avgTime}s
-            </div>
-
-            {acc < 60 && val.total >= 3 && (
-              <div className="text-red-500 text-sm">
-                Weak → {mainIssue}
-              </div>
-            )}
+          <div className="flex gap-2">
+            <button onClick={() => setResult(true)} className="flex-1 bg-green-100 p-2 rounded">Correct</button>
+            <button onClick={() => setResult(false)} className="flex-1 bg-red-100 p-2 rounded">Wrong</button>
           </div>
-        )
-      })}
+
+          <div className="flex gap-2 flex-wrap">
+            {['concept', 'silly', 'time', 'guess'].map((m) => (
+              <button key={m} onClick={() => setMistake(m)} className="bg-gray-100 px-2 py-1 rounded text-xs">
+                {m}
+              </button>
+            ))}
+          </div>
+
+          <button onClick={handleSubmit} className="w-full bg-black text-white p-2 rounded">
+            Save
+          </button>
+        </div>
+
+        {/* Insights */}
+        <div className="bg-white p-4 rounded shadow">
+          <h3 className="font-semibold mb-2">Insights</h3>
+
+          {stats.map(([topic, val]: any) => {
+            const acc = Math.round((val.correct / val.total) * 100)
+            const avgTime = Math.round(val.time / val.total)
+            const mainIssue = Object.entries(val.mistakes).sort((a: any, b: any) => b[1] - a[1])[0][0]
+
+            return (
+              <div key={topic} className="border p-2 rounded mb-2 text-sm">
+                <b>{topic}</b><br />
+                {acc}% accuracy | {avgTime}s avg
+
+                {acc < 60 && val.total >= 3 && (
+                  <div className="text-red-500">
+                    Weak → {mainIssue}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* 🔒 PREMIUM PREVIEW */}
+        <div className="bg-white p-4 rounded shadow text-sm">
+          <h3 className="font-semibold mb-2">Advanced Insights (Premium)</h3>
+          <p className="text-gray-500">
+            Pattern detection, smart revision plan, and AI feedback coming soon.
+          </p>
+        </div>
+
+      </div>
     </div>
-  </div>
-)
+  )
 }
