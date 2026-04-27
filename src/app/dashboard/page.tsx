@@ -84,46 +84,66 @@ export default function Dashboard() {
   )
 
   return (
-    <div style={{ maxWidth: 600, margin: '40px auto', fontFamily: 'sans-serif' }}>
-      <h2>Concept Gap Analyzer</h2>
+  <div className="min-h-screen bg-gray-50 p-6">
+    <div className="max-w-xl mx-auto bg-white p-6 rounded-xl shadow">
 
-      <button onClick={async () => { await signOut(); router.push('/') }}>
-        Logout
-      </button>
-
-      <hr />
-
-      <input
-        placeholder="Topic"
-        value={topic}
-        onChange={(e) => setTopic(e.target.value)}
-      />
-
-      <input
-        type="number"
-        placeholder="Time (sec)"
-        value={time}
-        onChange={(e) => setTime(Number(e.target.value))}
-      />
-
-      <div>
-        <button onClick={() => setResult(true)}>Correct</button>
-        <button onClick={() => setResult(false)}>Wrong</button>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold">Dashboard</h2>
+        <button
+          onClick={async () => {
+            await signOut()
+            router.push('/')
+          }}
+          className="text-sm text-red-500"
+        >
+          Logout
+        </button>
       </div>
 
-      <div>
-        {['concept', 'silly', 'time', 'guess'].map((m) => (
-          <button key={m} onClick={() => setMistake(m)}>
-            {m}
-          </button>
-        ))}
+      <div className="space-y-3">
+        <input
+          className="w-full p-2 border rounded"
+          placeholder="Topic"
+          value={topic}
+          onChange={(e) => setTopic(e.target.value)}
+        />
+
+        <input
+          className="w-full p-2 border rounded"
+          type="number"
+          placeholder="Time (sec)"
+          value={time}
+          onChange={(e) => setTime(Number(e.target.value))}
+        />
+
+        <div className="flex gap-2">
+          <button onClick={() => setResult(true)} className="flex-1 bg-green-100 p-2 rounded">Correct</button>
+          <button onClick={() => setResult(false)} className="flex-1 bg-red-100 p-2 rounded">Wrong</button>
+        </div>
+
+        <div className="flex gap-2 flex-wrap">
+          {['concept', 'silly', 'time', 'guess'].map((m) => (
+            <button
+              key={m}
+              onClick={() => setMistake(m)}
+              className="bg-gray-100 px-3 py-1 rounded text-sm"
+            >
+              {m}
+            </button>
+          ))}
+        </div>
+
+        <button
+          onClick={handleSubmit}
+          className="w-full bg-black text-white p-2 rounded"
+        >
+          Save
+        </button>
       </div>
 
-      <button onClick={handleSubmit}>Save</button>
+      <hr className="my-6" />
 
-      <hr />
-
-      <h3>Insights</h3>
+      <h3 className="font-semibold mb-2">Insights</h3>
 
       {analysis.map(([topic, val]: any) => {
         const acc = Math.round((val.correct / val.total) * 100)
@@ -132,18 +152,21 @@ export default function Dashboard() {
         let mainIssue = Object.entries(val.mistakes).sort((a: any, b: any) => b[1] - a[1])[0][0]
 
         return (
-          <div key={topic} style={{ marginBottom: 10 }}>
-            <b>{topic}</b><br />
-            Accuracy: {acc}% | Avg Time: {avgTime}s<br />
+          <div key={topic} className="p-3 border rounded mb-2">
+            <div className="font-medium">{topic}</div>
+            <div className="text-sm text-gray-600">
+              Accuracy: {acc}% | Avg Time: {avgTime}s
+            </div>
 
             {acc < 60 && val.total >= 3 && (
-              <span style={{ color: 'red' }}>
-                Weak → Main issue: {mainIssue}
-              </span>
+              <div className="text-red-500 text-sm">
+                Weak → {mainIssue}
+              </div>
             )}
           </div>
         )
       })}
     </div>
-  )
+  </div>
+)
 }
