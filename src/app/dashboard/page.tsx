@@ -25,6 +25,9 @@ export default function Dashboard() {
   const [mistake, setMistake] = useState('concept')
   const [data, setData] = useState<any[]>([])
 
+  const [explanation, setExplanation] = useState('')
+  const [feedback, setFeedback] = useState('')
+
   const loadData = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return router.push('/')
@@ -53,6 +56,35 @@ export default function Dashboard() {
     loadData()
   }
 
+  // -------- Explanation Checker --------
+  const checkExplanation = () => {
+    if (!topic || !explanation) return
+
+    const keywords: any = {
+      'binary trees': ['node', 'left', 'right', 'tree'],
+      'k-maps': ['boolean', 'simplify', 'group'],
+      'graphs': ['node', 'edge', 'path', 'traverse']
+    }
+
+    const key = topic.toLowerCase()
+    const expected = keywords[key] || []
+
+    let score = 0
+
+    expected.forEach((word: string) => {
+      if (explanation.toLowerCase().includes(word)) score++
+    })
+
+    if (score === 0) {
+      setFeedback('Weak explanation — missing core concepts')
+    } else if (score < expected.length) {
+      setFeedback('Partial understanding — improve explanation')
+    } else {
+      setFeedback('Good understanding')
+    }
+  }
+
+  // -------- Stats --------
   const stats = Object.entries(
     data.reduce((acc: any, item) => {
       if (!acc[item.topic]) acc[item.topic] = { total: 0, correct: 0 }
@@ -62,32 +94,43 @@ export default function Dashboard() {
     }, {})
   )
 
+  // -------- Chart --------
   const chartData = {
     labels: stats.map(([t]) => t),
     datasets: [
       {
         label: 'Accuracy %',
-        data: stats.map(([_, v]: any) => Math.round((v.correct / v.total) * 100))
+        data: stats.map(([_, v]: any) =>
+          Math.round((v.correct / v.total) * 100)
+        )
       }
     ]
   }
+
+  // -------- Revision System --------
+  const revision = stats
+    .filter(([_, val]: any) => {
+      const acc = (val.correct / val.total) * 100
+      return acc < 60 && val.total >= 2
+    })
+    .map(([topic]) => topic)
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white p-6 flex justify-center">
       <div className="w-full max-w-xl space-y-6">
 
         {/* Header */}
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-semibold">Dashboard</h1>
+        <div className="flex justify-between">
+          <h1 className="text-xl font-semibold">Dashboard</h1>
           <button onClick={async () => { await signOut(); router.push('/') }}>
             Logout
           </button>
         </div>
 
-        {/* Input Card */}
-        <div className="bg-white p-5 rounded-2xl shadow space-y-3">
+        {/* Input */}
+        <div className="bg-white p-4 rounded shadow space-y-2">
           <input
-            className="w-full p-3 border rounded-lg"
+            className="w-full border p-2 rounded"
             placeholder="Topic"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
@@ -95,8 +138,8 @@ export default function Dashboard() {
 
           <input
             type="number"
-            className="w-full p-3 border rounded-lg"
-            placeholder="Time (sec)"
+            className="w-full border p-2 rounded"
+            placeholder="Time"
             value={time}
             onChange={(e) => setTime(Number(e.target.value))}
           />
@@ -108,33 +151,50 @@ export default function Dashboard() {
 
           <div className="flex gap-2 flex-wrap">
             {['concept','silly','time','guess'].map(m => (
-              <button key={m} onClick={()=>setMistake(m)} className="bg-gray-100 px-3 py-1 rounded text-sm">
+              <button key={m} onClick={()=>setMistake(m)} className="bg-gray-100 px-2 py-1 rounded text-sm">
                 {m}
               </button>
             ))}
           </div>
 
-          <button onClick={handleSubmit} className="w-full bg-black text-white p-3 rounded-lg">
+          {/* Explanation */}
+          <textarea
+            placeholder="Explain the concept"
+            className="w-full border p-2 rounded"
+            value={explanation}
+            onChange={(e) => setExplanation(e.target.value)}
+          />
+
+          <button onClick={checkExplanation} className="w-full bg-purple-600 text-white p-2 rounded">
+            Check Explanation
+          </button>
+
+          {feedback && (
+            <div className="bg-gray-100 p-2 rounded text-sm">
+              {feedback}
+            </div>
+          )}
+
+          <button onClick={handleSubmit} className="w-full bg-black text-white p-2 rounded">
             Save
           </button>
         </div>
 
         {/* Chart */}
-        <div className="bg-white p-5 rounded-2xl shadow">
-          <h3 className="mb-3 font-semibold">Accuracy Overview</h3>
+        <div className="bg-white p-4 rounded shadow">
           <Bar data={chartData} />
         </div>
 
         {/* Insights */}
-        <div className="bg-white p-5 rounded-2xl shadow">
+        <div className="bg-white p-4 rounded shadow">
           <h3 className="font-semibold mb-2">Insights</h3>
 
           {stats.map(([topic, val]: any) => {
             const acc = Math.round((val.correct / val.total) * 100)
 
             return (
-              <div key={topic} className="border rounded p-3 mb-2">
-                <b>{topic}</b> — {acc}%
+              <div key={topic} className="text-sm">
+                {topic} — {acc}%
                 {acc < 60 && val.total >= 3 && (
                   <span className="text-red-500 ml-2">Weak</span>
                 )}
@@ -143,12 +203,19 @@ export default function Dashboard() {
           })}
         </div>
 
-        {/* Premium teaser */}
-        <div className="bg-gradient-to-r from-black to-gray-700 text-white p-5 rounded-2xl shadow">
-          <h3 className="font-semibold">Upgrade</h3>
-          <p className="text-sm">
-            Get AI insights, smart revision plans, and deep analytics.
-          </p>
+        {/* Revision */}
+        <div className="bg-white p-4 rounded shadow">
+          <h3 className="font-semibold mb-2">Revision Plan</h3>
+
+          {revision.length === 0 ? (
+            <p className="text-sm text-gray-500">No weak topics</p>
+          ) : (
+            revision.map((t) => (
+              <div key={t} className="text-sm">
+                Revise: {t}
+              </div>
+            ))
+          )}
         </div>
 
       </div>
