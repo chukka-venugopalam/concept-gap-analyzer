@@ -24,9 +24,9 @@ export default function AddAttempt({
 
     setLoading(true)
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    // ✅ GET USER PROPERLY
+    const res = await supabase.auth.getUser()
+    const user = res.data.user
 
     if (!user) {
       alert('Not logged in')
@@ -34,19 +34,22 @@ export default function AddAttempt({
       return
     }
 
-    const { error } = await supabase.from('attempts').insert([
-      {
-        user_id: user.id,
-        topic: form.topic,
-        result: form.result,
-        time_taken: Number(form.time),
-        mistake_type: form.mistake,
-      },
-    ])
+    const { data, error } = await supabase
+      .from('attempts')
+      .insert([
+        {
+          user_id: user.id,
+          topic: form.topic,
+          result: form.result,
+          time_taken: Number(form.time),
+          mistake_type: form.mistake,
+        },
+      ])
+
+    console.log('INSERT RESULT:', data, error)
 
     if (error) {
-      console.log(error)
-      alert('Error saving')
+      alert(error.message)
     } else {
       setForm({
         topic: '',
