@@ -1,6 +1,14 @@
-export default function Card({ children }: any) {
+import clsx from 'clsx'
+
+export default function Card({ children, className }: any) {
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border">
+    <div
+      className={clsx(
+        'bg-white p-6 rounded-2xl shadow-sm border border-gray-200',
+        'hover:shadow-md transition-shadow',
+        className
+      )}
+    >
       {children}
     </div>
   )

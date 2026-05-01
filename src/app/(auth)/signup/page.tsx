@@ -7,59 +7,135 @@ import { supabase } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
+import Link from 'next/link'
 import { useState } from 'react'
 
 export default function SignupPage() {
   const router = useRouter()
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  const { register, handleSubmit } = useForm({
+  const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(signupSchema),
   })
 
   const onSubmit = async (data: any) => {
     setError('')
+    setLoading(true)
 
-    const { error } = await supabase.auth.signUp({
-      email: data.email,
-      password: data.password,
-      options: {
-        data: {
-          username: data.username,
-          education: data.education,
+    try {
+      const { error } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          data: {
+            username: data.username,
+            education: data.education,
+          },
         },
-      },
-    })
+      })
 
-    if (error) {
-      setError(error.message)
-    } else {
-      router.push('/dashboard')
-      router.refresh()
+      if (error) {
+        setError(error.message)
+      } else {
+        router.push('/dashboard')
+        router.refresh()
+      }
+    } finally {
+      setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="w-full max-w-md space-y-4"
-      >
-        <h1 className="text-2xl font-semibold">Signup</h1>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center px-4 py-8">
+      <div className="w-full max-w-md">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 space-y-6">
+          
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-gray-900">Create Account</h1>
+            <p className="text-gray-600 mt-2">Start your learning journey</p>
+          </div>
 
-        <Input placeholder="Username" {...register('username')} />
-        <Input placeholder="Education" {...register('education')} />
-        <Input placeholder="Email" {...register('email')} />
-        <Input type="password" placeholder="Password" {...register('password')} />
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Username
+              </label>
+              <Input
+                placeholder="Your name"
+                {...register('username')}
+              />
+              {errors.username && (
+                <p className="text-xs text-red-600 mt-1">{String(errors.username.message)}</p>
+              )}
+            </div>
 
-        {error && <p className="text-red-500 text-sm">{error}</p>}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Education Level
+              </label>
+              <Input
+                placeholder="e.g., High School, University"
+                {...register('education')}
+              />
+              {errors.education && (
+                <p className="text-xs text-red-600 mt-1">{String(errors.education.message)}</p>
+              )}
+            </div>
 
-        <Button type="submit">Create account</Button>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email
+              </label>
+              <Input
+                type="email"
+                placeholder="you@example.com"
+                {...register('email')}
+              />
+              {errors.email && (
+                <p className="text-xs text-red-600 mt-1">{String(errors.email.message)}</p>
+              )}
+            </div>
 
-        <div className="text-sm">
-          <a href="/login">Already have account?</a>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Password
+              </label>
+              <Input
+                type="password"
+                placeholder="••••••••"
+                {...register('password')}
+              />
+              {errors.password && (
+                <p className="text-xs text-red-600 mt-1">{String(errors.password.message)}</p>
+              )}
+            </div>
+
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                {error}
+              </div>
+            )}
+
+            <Button type="submit" disabled={loading} className="w-full">
+              {loading ? 'Creating account...' : 'Create Account'}
+            </Button>
+          </form>
+
+          <div className="border-t border-gray-200 pt-6 text-center">
+            <p className="text-sm text-gray-600">
+              Already have an account?{' '}
+              <Link href="/login" className="text-indigo-600 font-medium hover:underline">
+                Sign in
+              </Link>
+            </p>
+          </div>
         </div>
-      </form>
+
+        <p className="text-center text-xs text-gray-500 mt-6">
+          By signing up, you agree to our Terms of Service
+        </p>
+      </div>
     </div>
   )
 }

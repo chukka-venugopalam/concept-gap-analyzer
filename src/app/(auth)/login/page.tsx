@@ -1,63 +1,108 @@
 'use client'
 
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { loginSchema } from '@/lib/validators/auth'
+import { useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import Input from '@/components/ui/Input'
+import Link from 'next/link'
 import Button from '@/components/ui/Button'
-import { useState } from 'react'
+import Input from '@/components/ui/Input'
 
-export default function LoginPage() {
+export default function Login() {
   const router = useRouter()
-  const [error, setError] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
-  const { register, handleSubmit } = useForm({
-    resolver: zodResolver(loginSchema),
-  })
-
-  const onSubmit = async (data: any) => {
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
     setLoading(true)
     setError('')
 
-    const { error } = await supabase.auth.signInWithPassword(data)
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
 
     if (error) {
       setError(error.message)
-      setLoading(false)
     } else {
       router.push('/dashboard')
       router.refresh()
     }
+
+    setLoading(false)
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="w-full max-w-md bg-white p-6 rounded-2xl border space-y-4 shadow-sm"
-      >
-        <h1 className="text-2xl font-semibold text-center">
-          Login
-        </h1>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center px-4">
+      <div className="w-full max-w-md">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 space-y-6">
+          
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-gray-900">Welcome Back</h1>
+            <p className="text-gray-600 mt-2">Sign in to your account</p>
+          </div>
 
-        <Input placeholder="Email" {...register('email')} />
-        <Input type="password" placeholder="Password" {...register('password')} />
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email
+              </label>
+              <Input
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+                disabled={loading}
+                required
+              />
+            </div>
 
-        {error && (
-          <p className="text-red-500 text-sm">{error}</p>
-        )}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Password
+              </label>
+              <Input
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+                disabled={loading}
+                required
+              />
+            </div>
 
-        <Button type="submit" className="w-full">
-          {loading ? 'Logging in...' : 'Login'}
-        </Button>
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                {error}
+              </div>
+            )}
 
-        <div className="text-sm text-center">
-          <a href="/forgot-password">Forgot password?</a>
+            <Button type="submit" disabled={loading} className="w-full">
+              {loading ? 'Signing in...' : 'Sign In'}
+            </Button>
+          </form>
+
+          <div className="border-t border-gray-200 pt-6 space-y-3 text-center">
+            <p className="text-sm text-gray-600">
+              Don't have an account?{' '}
+              <Link href="/signup" className="text-indigo-600 font-medium hover:underline">
+                Sign up
+              </Link>
+            </p>
+            <p className="text-sm text-gray-600">
+              <Link href="/forgot-password" className="text-indigo-600 font-medium hover:underline">
+                Forgot password?
+              </Link>
+            </p>
+          </div>
         </div>
-      </form>
+
+        <p className="text-center text-xs text-gray-500 mt-6">
+          By signing in, you agree to our Terms of Service
+        </p>
+      </div>
     </div>
   )
 }
