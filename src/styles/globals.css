@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 body {
-  background: linear-gradient(to bottom, #f8fafc, #e0e7ff);
+  background: linear-gradient(to bottom, #0b7ae9, #8f93a0);
 }
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }

@@ -17,36 +17,43 @@ export default function AttemptsList({ refresh }: { refresh: number }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const fetchAttempts = async () => {
-      setLoading(true)
-      try {
-        const { data: { user } } = await supabase.auth.getUser()
-        
-        if (!user) {
-          setAttempts([])
-          setLoading(false)
-          return
-        }
+  const fetchAttempts = async () => {
+    setLoading(true)
 
-        const { data, error } = await supabase
-          .from('attempts')
-          .select('id, topic, verdict, confidence, created_at')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(20)
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
-        if (error) throw error
-        setAttempts(data || [])
-      } catch (err) {
-        console.error('Error fetching attempts:', err)
-        setAttempts([])
-      } finally {
-        setLoading(false)
-      }
+    console.log("USER:", user)
+
+    if (!user) {
+      console.log("No user found")
+      setAttempts([])
+      setLoading(false)
+      return
     }
 
-    fetchAttempts()
-  }, [refresh])
+    const { data, error } = await supabase
+      .from('attempts')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+
+    console.log("DATA:", data)
+    console.log("ERROR:", error)
+
+    if (error) {
+      console.error("FETCH ERROR:", error.message)
+      setAttempts([])
+    } else {
+      setAttempts(data || [])
+    }
+
+    setLoading(false)
+  }
+
+  fetchAttempts()
+}, [refresh])
 
   const getVerdictBadge = (verdict: string) => {
     switch (verdict) {
