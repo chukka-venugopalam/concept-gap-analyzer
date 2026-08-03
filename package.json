@@ -9,7 +9,7 @@
     "dev:api": "cd apps/api && uvicorn main:app --reload"
   },
   "devDependencies": {
-    "turbo": "latest"
+    "turbo": "^2.0.0"
   },
-  "packageManager": "pnpm@9.15.4"
+  "packageManager": "pnpm@9.0.0"
 }
