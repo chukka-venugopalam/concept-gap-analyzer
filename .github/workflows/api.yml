@@ -2,16 +2,34 @@ name: API CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
+    paths:
+      - 'apps/api/**'
   pull_request:
-    branches: [ main ]
+    branches: [main]
+    paths:
+      - 'apps/api/**'
 
 jobs:
-  lint:
+  build:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install -r apps/api/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          cd apps/api
+          pip install -r requirements.txt
+
+      - name: Check syntax
+        run: |
+          cd apps/api
+          python -m py_compile main.py
+          echo "API syntax check passed"
