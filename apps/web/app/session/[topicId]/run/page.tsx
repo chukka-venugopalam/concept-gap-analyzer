@@ -7,7 +7,7 @@ import { StageIndicator } from '@/components/session/StageIndicator'
 import { Textarea } from '@/components/ui/Textarea'
 import { Button } from '@/components/ui/Button'
 import { sessionsAPI } from '@/lib/api/sessions'
-import { TOPICS } from '@cip/shared'
+import { TOPICS } from '@/lib/topics'
 
 export default function SessionRunPage() {
   const params = useParams()

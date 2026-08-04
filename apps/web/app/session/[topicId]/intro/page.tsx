@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { SessionShell } from '@/components/layout/SessionShell'
 import { Button } from '@/components/ui/Button'
 import { usersAPI } from '@/lib/api/users'
-import { TOPICS } from '@cip/shared'
+import { TOPICS } from '@/lib/topics'
 
 export default function SessionIntroPage() {
   const params = useParams()
