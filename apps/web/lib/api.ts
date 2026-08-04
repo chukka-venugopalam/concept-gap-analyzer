@@ -1,6 +1,12 @@
 import { createClient } from './supabase'
 
-const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000') + '/api/v1'
+const getApiBase = () => {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL
+  if (envUrl && envUrl.startsWith('http')) {
+    return envUrl.replace(/\/$/, '') + '/api/v1'
+  }
+  return 'http://localhost:8000/api/v1'
+}
 
 export class APIError extends Error {
   constructor(
@@ -29,7 +35,8 @@ async function request<T>(
   const demoToken = typeof window !== 'undefined' ? localStorage.getItem('cip_demo_token') : null
   const accessToken = session?.access_token || demoToken || 'demo_token_dev'
 
-  const url = new URL(API_BASE + path)
+  const apiBase = getApiBase()
+  const url = new URL(apiBase + path)
   if (params) {
     Object.entries(params).forEach(([k, v]) => {
       if (v !== undefined && v !== null) {

@@ -1,13 +1,7 @@
 {
-  "version": 2,
   "buildCommand": "cd apps/web && pnpm build",
-  "installCommand": "npm install -g pnpm@9.15.4 && pnpm install",
+  "devCommand": "cd apps/web && pnpm dev",
+  "installCommand": "pnpm install",
   "outputDirectory": "apps/web/.next",
-  "framework": "nextjs",
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/$1"
-    }
-  ]
+  "framework": "nextjs"
 }
