@@ -53,4 +53,12 @@ async def cip_exception_handler(
 async def health():
     return {"data": {"status": "ok", "version": "1.0.0"}}
 
+@app.get("/api/v1/debug/cors")
+async def debug_cors():
+    return {
+        "allowed_origins": settings.allowed_origins,
+        "origins_list": settings.origins_list,
+        "environment": settings.environment
+    }
+
 app.include_router(router)
