@@ -15,6 +15,7 @@ export default function AuthPage() {
   const supabase = createClient()
 
   const handleDemoAuth = async () => {
+    console.log('[AUTH] Demo Auth initiated')
     document.cookie = 'cip_demo_auth=true; path=/; max-age=86400'
     localStorage.setItem('cip_demo_token', 'demo_token_dev')
 
@@ -32,31 +33,41 @@ export default function AuthPage() {
         }),
       })
     } catch (err) {
-      console.error('Failed to sync demo user:', err)
+      console.error('[AUTH] Failed to sync demo user:', err)
     }
 
     router.push('/onboarding')
   }
 
   const handleGoogleAuth = async () => {
+    console.log('[AUTH] Starting Google OAuth...')
     try {
-      await supabase.auth.signInWithOAuth({
+      const { error: oauthErr } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/api/auth/callback`
         }
       })
+      if (oauthErr) {
+        console.error('[AUTH] Google OAuth error:', oauthErr)
+        throw oauthErr
+      }
     } catch (err: any) {
-      setError('Supabase Auth is not configured yet. Click "Continue in Demo Mode" below to test locally!')
+      console.error('[AUTH] Google Auth exception:', err)
+      setError(err.message || 'Supabase Auth is not configured yet. Click "Continue in Demo Mode" below to test locally!')
     }
   }
 
   const handleEmailAuth = async () => {
+    console.log('[AUTH] Starting auth...')
+    console.log('[AUTH] Mode:', isSignUp ? 'signup' : 'signin')
+    console.log('[AUTH] Email:', email)
     setError('')
     setLoading(true)
 
     try {
       if (isSignUp) {
+        console.log('[AUTH] Calling signUp...')
         const { error: signUpErr } = await supabase.auth.signUp({
           email,
           password,
@@ -64,6 +75,7 @@ export default function AuthPage() {
             emailRedirectTo: `${window.location.origin}/api/auth/callback`
           }
         })
+        console.log('[AUTH] SignUp result:', signUpErr ? signUpErr.message : 'success')
         if (signUpErr) throw signUpErr
 
         const { data: { session } } = await supabase.auth.getSession()
@@ -84,16 +96,20 @@ export default function AuthPage() {
 
         router.push('/onboarding')
       } else {
+        console.log('[AUTH] Calling signInWithPassword...')
         const { error: signInErr } = await supabase.auth.signInWithPassword({
           email,
           password
         })
+        console.log('[AUTH] SignIn result:', signInErr ? signInErr.message : 'success')
         if (signInErr) throw signInErr
 
         const { data: { session: currentSession } } = await supabase.auth.getSession()
+        console.log('[AUTH] Active session after login:', currentSession ? 'exists' : 'null')
 
         if (currentSession) {
           const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+          console.log('[AUTH] Syncing user to backend API URL:', apiUrl)
 
           await fetch(`${apiUrl}/api/v1/auth/sync-user`, {
             method: 'POST',
@@ -114,6 +130,7 @@ export default function AuthPage() {
           })
           const profileData = await profileRes.json()
           const onboardingDone = profileData?.onboarding_done || profileData?.data?.onboarding_done
+          console.log('[AUTH] Onboarding done status:', onboardingDone)
 
           if (onboardingDone) {
             router.push('/dashboard')
@@ -123,8 +140,9 @@ export default function AuthPage() {
         }
       }
     } catch (err: any) {
+      console.error('[AUTH] Caught error:', err)
       if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
-        setError('Supabase is not configured in apps/web/.env.local. Click "Continue in Demo Mode" below to test locally!')
+        setError('Supabase is not configured in environment variables. Click "Continue in Demo Mode" below to test locally!')
       } else {
         setError(err.message || 'Authentication failed')
       }

@@ -40,29 +40,20 @@ export default function SessionRunPage() {
   useEffect(() => {
     async function initSession() {
       try {
-        setStage(1)
-        setError('')
         setLoading(true)
-
+        setError('')
         const newSession = await sessionsAPI.start(topicId)
-
-        const sessionIdVal = newSession?.session_id || newSession?.data?.session_id || newSession?.id || newSession?.data?.id
-        if (!sessionIdVal) {
-          throw new Error('No session ID returned')
+        const sid = newSession?.session_id || newSession?.data?.session_id || newSession?.id || newSession?.data?.id
+        if (sid) {
+          setSessionId(sid)
         }
-
-        setSessionId(sessionIdVal)
-        setStage(1)
-        setLoading(false)
-
       } catch (err: any) {
         console.error('[SESSION] Init failed:', err)
-        setError('Failed to start session. Please try again.')
-        setStage(1)
+        setError('Session initialization failed.')
+      } finally {
         setLoading(false)
       }
     }
-
     if (topicId) {
       initSession()
     }
@@ -141,7 +132,7 @@ export default function SessionRunPage() {
     }
   }
 
-  const wordCount = stage1Text.trim() ? stage1Text.trim().split(/\s+/).length : 0
+  const wordCount = stage1Text.trim() ? stage1Text.trim().split(/\s+/).filter((w) => w.length > 0).length : 0
 
   return (
     <SessionShell topicName={topicName} stageText={typeof stage === 'number' ? `Stage ${stage} of 3` : ''}>
@@ -180,7 +171,7 @@ export default function SessionRunPage() {
           <Button
             size="lg"
             className="w-full"
-            disabled={wordCount < 50}
+            disabled={loading || wordCount < 50}
             onClick={handleStage1Submit}
           >
             Continue →
