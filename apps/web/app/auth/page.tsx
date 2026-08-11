@@ -54,7 +54,7 @@ export default function AuthPage() {
       }
     } catch (err: any) {
       console.error('[AUTH] Google Auth exception:', err)
-      setError(err.message || 'Supabase Auth is not configured yet. Click "Continue in Demo Mode" below to test locally!')
+      setError(err.message || 'Google authentication failed')
     }
   }
 
@@ -141,11 +141,7 @@ export default function AuthPage() {
       }
     } catch (err: any) {
       console.error('[AUTH] Caught error:', err)
-      if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
-        setError('Supabase is not configured in environment variables. Click "Continue in Demo Mode" below to test locally!')
-      } else {
-        setError(err.message || 'Authentication failed')
-      }
+      setError(err.message || 'Authentication failed')
     } finally {
       setLoading(false)
     }
