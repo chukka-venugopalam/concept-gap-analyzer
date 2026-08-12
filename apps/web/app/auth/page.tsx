@@ -5,14 +5,18 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 
 export default function AuthPage() {
+  console.log('[AUTH ENV CHECK]', {
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    apiUrl: process.env.NEXT_PUBLIC_API_URL
+  })
+
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isSignUp, setIsSignUp] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-
-  const supabase = createClient()
 
   const handleDemoAuth = async () => {
     console.log('[AUTH] Demo Auth initiated')
@@ -42,6 +46,7 @@ export default function AuthPage() {
   const handleGoogleAuth = async () => {
     console.log('[AUTH] Starting Google OAuth...')
     try {
+      const supabase = createClient()
       const { error: oauthErr } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -59,88 +64,55 @@ export default function AuthPage() {
   }
 
   const handleEmailAuth = async () => {
-    console.log('[AUTH] Starting auth...')
-    console.log('[AUTH] Mode:', isSignUp ? 'signup' : 'signin')
-    console.log('[AUTH] Email:', email)
     setError('')
     setLoading(true)
 
     try {
+      console.log('[AUTH] Attempting sign in...')
+      
+      const supabase = createClient()
+      
       if (isSignUp) {
-        console.log('[AUTH] Calling signUp...')
-        const { error: signUpErr } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/api/auth/callback`
+            emailRedirectTo: window.location.origin + '/api/auth/callback'
           }
         })
-        console.log('[AUTH] SignUp result:', signUpErr ? signUpErr.message : 'success')
-        if (signUpErr) throw signUpErr
-
-        const { data: { session } } = await supabase.auth.getSession()
-        if (session) {
-          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-          await fetch(`${apiUrl}/api/v1/auth/sync-user`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${session.access_token}`,
-            },
-            body: JSON.stringify({
-              email: session.user.email,
-              display_name: session.user.email?.split('@')[0] ?? 'User',
-            }),
-          })
-        }
-
+        console.log('[AUTH] SignUp:', { data, error })
+        if (error) throw error
         router.push('/onboarding')
+        
       } else {
-        console.log('[AUTH] Calling signInWithPassword...')
-        const { error: signInErr } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password
         })
-        console.log('[AUTH] SignIn result:', signInErr ? signInErr.message : 'success')
-        if (signInErr) throw signInErr
-
-        const { data: { session: currentSession } } = await supabase.auth.getSession()
-        console.log('[AUTH] Active session after login:', currentSession ? 'exists' : 'null')
-
-        if (currentSession) {
+        console.log('[AUTH] SignIn:', { data, error })
+        if (error) throw error
+        
+        const session = data.session
+        if (session) {
           const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-          console.log('[AUTH] Syncing user to backend API URL:', apiUrl)
-
-          await fetch(`${apiUrl}/api/v1/auth/sync-user`, {
+          
+          await fetch(apiUrl + '/api/v1/auth/sync-user', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${currentSession.access_token}`,
+              'Authorization': 'Bearer ' + session.access_token
             },
             body: JSON.stringify({
-              email: currentSession.user.email,
-              display_name: currentSession.user.email?.split('@')[0] ?? 'User',
-            }),
+              email: session.user.email,
+              display_name: session.user.email?.split('@')[0]
+            })
           })
-
-          const profileRes = await fetch(`${apiUrl}/api/v1/user/profile`, {
-            headers: {
-              Authorization: `Bearer ${currentSession.access_token}`
-            }
-          })
-          const profileData = await profileRes.json()
-          const onboardingDone = profileData?.onboarding_done || profileData?.data?.onboarding_done
-          console.log('[AUTH] Onboarding done status:', onboardingDone)
-
-          if (onboardingDone) {
-            router.push('/dashboard')
-          } else {
-            router.push('/onboarding')
-          }
+          
+          router.push('/dashboard')
         }
       }
     } catch (err: any) {
-      console.error('[AUTH] Caught error:', err)
+      console.error('[AUTH] Error:', err)
       setError(err.message || 'Authentication failed')
     } finally {
       setLoading(false)
