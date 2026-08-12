@@ -20,28 +20,22 @@ async def run_extraction(
     prompt: str
 ) -> ExtractionResult:
     MAX_RETRIES = 2
-
     for attempt in range(MAX_RETRIES):
         try:
-            model = get_gemini_client()
-
-            response = model.generate_content(prompt)
+            client = get_gemini_client()
+            response = client.models.generate_content(
+                model='gemini-2.0-flash',
+                contents=prompt
+            )
             content = response.text.strip()
-
-            print(f"[EXTRACTION] Raw response "
-                  f"({len(content)} chars): "
-                  f"{content[:100]}...")
+            print(f"[EXTRACTION] Response "
+                  f"({len(content)} chars)")
 
             if content.startswith("```"):
                 lines = content.split("\n")
-                content = "\n".join(
-                    lines[1:-1]
-                    if lines[-1] == "```"
-                    else lines[1:]
-                )
+                content = "\n".join(lines[1:-1])
 
             parsed = json.loads(content)
-
             concepts = []
             for item in parsed.get(
                 'extracted_concepts', []
@@ -53,7 +47,7 @@ async def run_extraction(
                 except Exception:
                     pass
 
-            print(f"[EXTRACTION] Extracted "
+            print(f"[EXTRACTION] Got "
                   f"{len(concepts)} concepts")
             return ExtractionResult(
                 extracted_concepts=concepts

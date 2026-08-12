@@ -1,24 +1,16 @@
-import google.generativeai as genai
+from google import genai
 from core.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
 
-_model = None
+_client = None
 
 def get_gemini_client():
-    global _model
-    if _model is None:
-        genai.configure(
+    global _client
+    if _client is None:
+        _client = genai.Client(
             api_key=settings.gemini_api_key
         )
-        _model = genai.GenerativeModel(
-            model_name='gemini-flash-latest',
-            generation_config=genai.GenerationConfig(
-                temperature=0.1,
-                max_output_tokens=2000,
-                response_mime_type='application/json'
-            )
-        )
-        logger.info("[AI] Gemini Flash client initialized")
-    return _model
+        logger.info("[AI] Gemini client initialized")
+    return _client

@@ -17,21 +17,18 @@ async def validate_misconception(
     prompt: str
 ) -> MisconceptionValidation:
     try:
-        model = get_gemini_client()
-
-        response = model.generate_content(prompt)
+        client = get_gemini_client()
+        response = client.models.generate_content(
+            model='gemini-2.0-flash',
+            contents=prompt
+        )
         content = response.text.strip()
 
         if content.startswith("```"):
             lines = content.split("\n")
-            content = "\n".join(
-                lines[1:-1]
-                if lines[-1] == "```"
-                else lines[1:]
-            )
+            content = "\n".join(lines[1:-1])
 
         parsed = json.loads(content)
-
         return MisconceptionValidation(
             confirmed=parsed.get('confirmed', False),
             confidence=parsed.get('confidence', 0.0),
@@ -43,7 +40,7 @@ async def validate_misconception(
 
     except Exception as e:
         logger.error(
-            f"Misconception validation failed: {e}"
+            f"Misconception failed: {e}"
         )
         return MisconceptionValidation(
             confirmed=False,

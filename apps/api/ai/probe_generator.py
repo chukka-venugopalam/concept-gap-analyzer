@@ -19,25 +19,18 @@ async def generate_probes(
     prompt: str
 ) -> ProbeResult:
     try:
-        model = get_gemini_client()
-
-        response = model.generate_content(prompt)
+        client = get_gemini_client()
+        response = client.models.generate_content(
+            model='gemini-2.0-flash',
+            contents=prompt
+        )
         content = response.text.strip()
-
-        print(f"[PROBES] Raw response "
-              f"({len(content)} chars): "
-              f"{content[:100]}...")
 
         if content.startswith("```"):
             lines = content.split("\n")
-            content = "\n".join(
-                lines[1:-1]
-                if lines[-1] == "```"
-                else lines[1:]
-            )
+            content = "\n".join(lines[1:-1])
 
         parsed = json.loads(content)
-
         probes = []
         for i, item in enumerate(
             parsed.get('probes', [])
@@ -56,7 +49,7 @@ async def generate_probes(
             except Exception:
                 pass
 
-        print(f"[PROBES] Generated {len(probes)} probes")
+        print(f"[PROBES] Generated {len(probes)}")
         return ProbeResult(
             probes=probes,
             probe_count=len(probes)
