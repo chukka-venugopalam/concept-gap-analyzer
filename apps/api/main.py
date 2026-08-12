@@ -35,6 +35,8 @@ app.add_middleware(
     allow_headers=["Authorization","Content-Type"],
 )
 
+print(f"[CORS DEBUG] Allowed origins: {settings.origins_list}")
+
 @app.exception_handler(CIPException)
 async def cip_exception_handler(
     request: Request, exc: CIPException
