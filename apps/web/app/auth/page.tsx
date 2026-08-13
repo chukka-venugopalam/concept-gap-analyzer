@@ -16,6 +16,7 @@ export default function AuthPage() {
   const [password, setPassword] = useState('')
   const [isSignUp, setIsSignUp] = useState(false)
   const [error, setError] = useState('')
+  const [infoMessage, setInfoMessage] = useState('')
   const [loading, setLoading] = useState(false)
 
   const handleDemoAuth = async () => {
@@ -65,32 +66,48 @@ export default function AuthPage() {
 
   const handleEmailAuth = async () => {
     setError('')
+    setInfoMessage('')
     setLoading(true)
 
     try {
-      console.log('[AUTH] Attempting sign in...')
-      
+      console.log('[AUTH] Attempting auth... mode:', isSignUp ? 'signUp' : 'signIn')
       const supabase = createClient()
       
       if (isSignUp) {
-        const { data, error } = await supabase.auth.signUp({
+        const { data, error: signUpErr } = await supabase.auth.signUp({
           email,
           password,
           options: {
             emailRedirectTo: window.location.origin + '/api/auth/callback'
           }
         })
-        console.log('[AUTH] SignUp:', { data, error })
-        if (error) throw error
-        router.push('/onboarding')
-        
+        console.log('[AUTH] SignUp result:', { data, error: signUpErr })
+        if (signUpErr) throw signUpErr
+
+        if (data.session) {
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+          await fetch(apiUrl + '/api/v1/auth/sync-user', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + data.session.access_token
+            },
+            body: JSON.stringify({
+              email: data.session.user.email,
+              display_name: data.session.user.email?.split('@')[0]
+            })
+          })
+          router.push('/onboarding')
+        } else {
+          setInfoMessage('Account created or confirmation needed. Please check your email or switch to Sign In!')
+        }
       } else {
-        const { data, error } = await supabase.auth.signInWithPassword({
+        const { data, error: signInErr } = await supabase.auth.signInWithPassword({
           email,
           password
         })
-        console.log('[AUTH] SignIn:', { data, error })
-        if (error) throw error
+        console.log('[AUTH] SignIn result:', { data, error: signInErr })
+        if (signInErr) throw signInErr
         
         const session = data.session
         if (session) {
@@ -152,6 +169,12 @@ export default function AuthPage() {
           </div>
         )}
 
+        {infoMessage && (
+          <div className="mb-4 text-xs text-accent bg-accent-dim p-3 rounded border border-accent/20">
+            {infoMessage}
+          </div>
+        )}
+
         <div className="space-y-4">
           <div>
             <label className="block text-xs font-medium text-secondary mb-1">Email</label>
@@ -186,7 +209,11 @@ export default function AuthPage() {
 
         <div className="mt-6 text-center space-y-3">
           <button
-            onClick={() => setIsSignUp(!isSignUp)}
+            onClick={() => {
+              setIsSignUp(!isSignUp)
+              setError('')
+              setInfoMessage('')
+            }}
             className="text-xs text-secondary hover:text-accent transition-colors cursor-pointer block w-full"
           >
             {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
