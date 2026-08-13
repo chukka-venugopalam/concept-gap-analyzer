@@ -73,7 +73,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 @app.get("/api/v1/health")
 async def health():
-    return {"data": {"status": "ok", "version": "1.0.0"}}
+    return {"data": {"status": "ok", "version": "1.0.1-step1"}}
 
 @app.get("/api/v1/debug/cors")
 async def debug_cors():
