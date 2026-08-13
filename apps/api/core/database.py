@@ -20,7 +20,7 @@ def get_ipv4_db_url(original_url: str) -> str:
         try:
             socket.getaddrinfo(f"db.{project_ref}.supabase.co", 5432, socket.AF_INET)
         except socket.gaierror:
-            pooler_host = "aws-0-us-east-1.pooler.supabase.com:6543"
+            pooler_host = "aws-0-ap-southeast-1.pooler.supabase.com:6543"
             url = re.sub(r'@db\.[a-z0-9]+\.supabase\.co(?::\d+)?', f'@{pooler_host}', url)
             if f"postgres.{project_ref}" not in url and "postgresql://postgres:" in url:
                 url = url.replace("postgresql://postgres:", f"postgresql://postgres.{project_ref}:", 1)
@@ -47,7 +47,7 @@ async def get_pool():
             db_url = urllib.parse.urlunparse(parsed._replace(query=new_query))
 
         try:
-            kwargs = {"min_size": 1, "max_size": 10}
+            kwargs = {"min_size": 1, "max_size": 10, "statement_cache_size": 0}
             if ssl_option:
                 kwargs["ssl"] = ssl_option
 

@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
+import traceback
 from core.config import settings
 from core.database import get_pool, close_pool
 from core.exceptions import CIPException
@@ -48,6 +49,25 @@ async def cip_exception_handler(
                 "code": exc.code,
                 "message": exc.message
             }
+        }
+    )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    print(f"[GLOBAL ERROR] {type(exc).__name__}: {exc}")
+    print(traceback.format_exc())
+    origin = request.headers.get("origin", "*")
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": {
+                "code": "internal_error",
+                "message": str(exc)
+            }
+        },
+        headers={
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true"
         }
     )
 

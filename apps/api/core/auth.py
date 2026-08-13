@@ -5,12 +5,10 @@ from fastapi.security import (
 from dataclasses import dataclass
 import jwt as pyjwt
 import httpx
-import json
 from core.config import settings
 
 security = HTTPBearer()
 
-# Cache JWKS keys
 _jwks_cache = None
 
 async def get_jwks():
@@ -18,21 +16,26 @@ async def get_jwks():
     if _jwks_cache is not None:
         return _jwks_cache
 
-    project_ref = settings.supabase_url.split(
-        "https://"
-    )[1].split(".supabase.co")[0]
+    try:
+        project_ref = settings.supabase_url.split(
+            "https://"
+        )[1].split(".supabase.co")[0]
 
-    jwks_url = (
-        f"https://{project_ref}.supabase.co"
-        f"/auth/v1/.well-known/jwks.json"
-    )
+        jwks_url = (
+            f"https://{project_ref}.supabase.co"
+            f"/auth/v1/.well-known/jwks.json"
+        )
 
-    async with httpx.AsyncClient() as client:
-        response = await client.get(jwks_url)
-        _jwks_cache = response.json()
-        print(f"[AUTH] JWKS loaded: "
-              f"{len(_jwks_cache.get('keys', []))} keys")
-        return _jwks_cache
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(jwks_url)
+            response.raise_for_status()
+            _jwks_cache = response.json()
+            print(f"[AUTH] JWKS loaded: "
+                  f"{len(_jwks_cache.get('keys', []))} keys")
+            return _jwks_cache
+    except Exception as e:
+        print(f"[JWKS ERROR] {type(e).__name__}: {e}")
+        raise
 
 @dataclass
 class CurrentUser:
@@ -45,17 +48,12 @@ async def get_current_user(
 ) -> CurrentUser:
     token = credentials.credentials
 
-    # Handle demo tokens immediately in development without PyJWT errors
     if settings.environment == "development" and (token == "demo_token_dev" or token.startswith("demo_")):
         return CurrentUser(id="a0000000-0000-0000-0000-000000000001", email="demo@example.com")
 
     print(f"[AUTH DEBUG] Token: {token[:30]}...")
 
     try:
-        # First try ES256 with JWKS
-        jwks = await get_jwks()
-
-        # Decode header to get kid
         header = pyjwt.get_unverified_header(token)
         print(f"[AUTH DEBUG] Token alg: {header.get('alg')}")
         print(f"[AUTH DEBUG] Token kid: {header.get('kid')}")
@@ -63,14 +61,10 @@ async def get_current_user(
         alg = header.get("alg", "ES256")
 
         if alg == "ES256":
-            # Use JWKS public key verification
             from jwt import PyJWKClient
-            jwks_url = (
-                f"https://"
-                f"{settings.supabase_url.split('https://')[1].split('.supabase.co')[0]}"
-                f".supabase.co/auth/v1/.well-known/jwks.json"
-            )
-            jwks_client = PyJWKClient(jwks_url)
+            project_ref = settings.supabase_url.split("https://")[1].split(".supabase.co")[0]
+            jwks_url = f"https://{project_ref}.supabase.co/auth/v1/.well-known/jwks.json"
+            jwks_client = PyJWKClient(jwks_url, timeout=10)
             signing_key = jwks_client.get_signing_key_from_jwt(token)
 
             payload = pyjwt.decode(
@@ -80,7 +74,6 @@ async def get_current_user(
                 options={"verify_aud": False}
             )
         else:
-            # Fallback: HS256 with legacy secret
             payload = pyjwt.decode(
                 token,
                 settings.supabase_jwt_secret,
@@ -88,8 +81,7 @@ async def get_current_user(
                 options={"verify_aud": False}
             )
 
-        print(f"[AUTH DEBUG] Decode success: "
-              f"{payload.get('sub')}")
+        print(f"[AUTH DEBUG] Decode success: {payload.get('sub')}")
 
         user_id = payload.get("sub")
         email = payload.get("email", "")
