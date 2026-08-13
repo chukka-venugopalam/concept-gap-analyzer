@@ -83,4 +83,11 @@ async def debug_cors():
         "environment": settings.environment
     }
 
+@app.get("/api/v1/debug/dburl")
+async def debug_dburl():
+    url = settings.database_url
+    import re
+    masked = re.sub(r':([^:@]+)@', ':***@', url)
+    return {"database_url_masked": masked}
+
 app.include_router(router)
