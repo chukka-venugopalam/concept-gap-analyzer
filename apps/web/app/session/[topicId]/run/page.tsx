@@ -67,7 +67,7 @@ export default function SessionRunPage() {
       setLoadingText('Mapping your explanation...')
 
       const res = await sessionsAPI.analyzeStage1(sessionId, stage1Text)
-      const generatedProbes = res.data?.probes || []
+      const generatedProbes = res?.probes || []
       setProbes(generatedProbes)
       setCurrentProbeIndex(0)
       setStage(2)
@@ -101,7 +101,7 @@ export default function SessionRunPage() {
         setLoadingText('Preparing challenge task...')
 
         const res = await sessionsAPI.analyzeStage2(sessionId, updatedResponses)
-        setChallengeTask(res.data?.challenge_task)
+        setChallengeTask(res?.challenge_task)
         setStage(3)
       } catch (err: any) {
         setError(err.message || 'Stage 2 processing failed')
@@ -122,8 +122,8 @@ export default function SessionRunPage() {
       await sessionsAPI.analyzeStage3(sessionId, stage3Text)
       const evalRes = await sessionsAPI.evaluate(sessionId)
 
-      if (evalRes.data?.session_id) {
-        router.push(`/results/${evalRes.data.session_id}`)
+      if (evalRes?.session_id) {
+        router.push(`/results/${evalRes.session_id}`)
       }
     } catch (err: any) {
       setError(err.message || 'Evaluation failed')

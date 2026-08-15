@@ -28,7 +28,7 @@ export default function ResultsPage() {
       try {
         setLoading(true)
         const res = await sessionsAPI.getResults(sessionId)
-        setData(res.data)
+        setData(res)
       } catch (err: any) {
         setError(err.message || 'Failed loading results')
       } finally {

@@ -21,8 +21,8 @@ export default function SessionIntroPage() {
     async function loadLastSession() {
       try {
         const res = await usersAPI.getSessions(1, topicId)
-        if (res.data?.sessions?.length > 0) {
-          setLastSession(res.data.sessions[0])
+        if (res?.sessions?.length > 0) {
+          setLastSession(res.sessions[0])
         }
       } catch {
         // ignore
