@@ -296,6 +296,128 @@ async def analyze_stage3(
         }
     }
 
+def build_results_payload(
+    session: dict,
+    topic: dict | None,
+    concepts: list[dict],
+    score_delta: int | None = None,
+    previous_score: int | None = None,
+    concept_evidence: list[dict] | None = None,
+    next_concepts_detail: list[dict] | None = None
+) -> dict:
+    concept_map = {c['id']: c for c in concepts}
+
+    known_ids = session.get('concepts_known') or []
+    weak_ids = session.get('concepts_weak') or []
+    missing_ids = session.get('concepts_missing') or []
+
+    evidence_list = concept_evidence or []
+    evidence_map = {
+        e['concept_id']: e for e in evidence_list if 'concept_id' in e
+    }
+
+    known_list = [
+        {
+            "concept_id": cid,
+            "concept_name": concept_map.get(cid, {}).get('name', cid),
+            "evidence_quote": evidence_map.get(cid, {}).get('evidence_quote', ""),
+            "stage_source": evidence_map.get(cid, {}).get('stage_source', 1)
+        }
+        for cid in known_ids
+    ]
+
+    weak_list = [
+        {
+            "concept_id": cid,
+            "concept_name": concept_map.get(cid, {}).get('name', cid),
+            "gap_explanation": f"You mentioned {concept_map.get(cid, {}).get('name', cid)} but didn't explain it fully",
+            "evidence_quote": evidence_map.get(cid, {}).get('evidence_quote', ""),
+            "stage_source": 1
+        }
+        for cid in weak_ids
+    ]
+
+    missing_list = [
+        {
+            "concept_id": cid,
+            "concept_name": concept_map.get(cid, {}).get('name', cid),
+            "importance": "high" if concept_map.get(cid, {}).get('importance_weight', 2) >= 3 else "medium",
+            "prerequisite_for": []
+        }
+        for cid in missing_ids
+    ]
+
+    raw_misconceptions = session.get('misconceptions')
+    if isinstance(raw_misconceptions, str):
+        try:
+            misconceptions = json.loads(raw_misconceptions)
+        except Exception:
+            misconceptions = []
+    elif isinstance(raw_misconceptions, list):
+        misconceptions = raw_misconceptions
+    else:
+        misconceptions = []
+
+    if next_concepts_detail is not None:
+        next_concepts = next_concepts_detail
+    else:
+        raw_next = session.get('next_concepts') or []
+        if isinstance(raw_next, str):
+            try:
+                raw_next = json.loads(raw_next)
+            except Exception:
+                raw_next = []
+
+        next_concepts = []
+        for item in raw_next:
+            if isinstance(item, str):
+                cname = concept_map.get(item, {}).get('name', item)
+                reason = (f"You mentioned {cname} but didn't explain it fully"
+                          if item in weak_ids else
+                          "Core concept — required for interview readiness")
+                next_concepts.append({
+                    "concept_id": item,
+                    "concept_name": cname,
+                    "reason": reason
+                })
+            elif isinstance(item, dict):
+                next_concepts.append(item)
+
+    score_overall = session.get('score_overall', 0)
+    score_coverage = session.get('score_coverage', 0)
+    score_depth = session.get('score_depth', 0)
+    score_accuracy = session.get('score_accuracy', 0)
+    score_connectivity = session.get('score_connectivity', 0)
+
+    completed_at = session.get('completed_at')
+    if hasattr(completed_at, 'isoformat'):
+        completed_at = completed_at.isoformat()
+
+    return {
+        "session_id": session.get('session_id') or session.get('id'),
+        "topic_id": session.get('topic_id'),
+        "topic_name": topic.get('name') if topic else session.get('topic_name'),
+        "session_number": session.get('session_number', 1),
+        "score": {
+            "overall": score_overall,
+            "coverage": score_coverage,
+            "depth": score_depth,
+            "accuracy": score_accuracy,
+            "connectivity": score_connectivity,
+            "delta": score_delta,
+            "previous_score": previous_score
+        },
+        "concepts": {
+            "known": known_list,
+            "weak": weak_list,
+            "missing": missing_list
+        },
+        "misconceptions": misconceptions,
+        "next_concepts": next_concepts,
+        "completed_at": completed_at,
+        "duration_seconds": session.get('duration_seconds', 0)
+    }
+
 @router.post("/evaluate")
 async def evaluate(
     body: EvaluateRequest,
@@ -363,92 +485,32 @@ async def evaluate(
     delta = (score['overall'] - prev_score
              if prev_score is not None else None)
 
-    concept_map = {c['id']: c for c in concepts}
-
-    return {
-        "data": {
-            "session_id": body.session_id,
-            "topic_id": session['topic_id'],
-            "topic_name": topic['name'],
-            "session_number": session.get(
-                'session_number', 1
-            ),
-            "score": {**score, "delta": delta,
-                      "previous_score": prev_score},
-            "concepts": {
-                "known": [
-                    {
-                        "concept_id": cid,
-                        "concept_name":
-                            concept_map.get(
-                                cid, {}
-                            ).get('name', cid),
-                        "evidence_quote":
-                            next((
-                                e['evidence_quote']
-                                for e in
-                                evaluation[
-                                    'concept_evidence'
-                                ]
-                                if e['concept_id'] == cid
-                            ), ""),
-                        "stage_source": next((
-                            e['stage_source']
-                            for e in
-                            evaluation['concept_evidence']
-                            if e['concept_id'] == cid
-                        ), 1)
-                    }
-                    for cid in evaluation['concepts_known']
-                ],
-                "weak": [
-                    {
-                        "concept_id": cid,
-                        "concept_name":
-                            concept_map.get(
-                                cid, {}
-                            ).get('name', cid),
-                        "gap_explanation":
-                            f"You mentioned "
-                            f"{concept_map.get(cid,{}).get('name',cid)}"
-                            f" but didn't explain it fully",
-                        "evidence_quote": next((
-                            e['evidence_quote']
-                            for e in
-                            evaluation['concept_evidence']
-                            if e['concept_id'] == cid
-                        ), ""),
-                        "stage_source": 1
-                    }
-                    for cid in evaluation['concepts_weak']
-                ],
-                "missing": [
-                    {
-                        "concept_id": cid,
-                        "concept_name":
-                            concept_map.get(
-                                cid, {}
-                            ).get('name', cid),
-                        "importance": "high" if
-                            concept_map.get(
-                                cid, {}
-                            ).get(
-                                'importance_weight', 2
-                            ) >= 3 else "medium",
-                        "prerequisite_for": []
-                    }
-                    for cid in
-                    evaluation['concepts_missing']
-                ]
-            },
-            "misconceptions": evaluation['misconceptions'],
-            "next_concepts":
-                evaluation['next_concepts_detail'],
-            "completed_at": None,
-            "duration_seconds":
-                evaluation['duration_seconds']
-        }
+    eval_session_dict = {
+        **session,
+        "score_overall": score['overall'],
+        "score_coverage": score['coverage'],
+        "score_depth": score['depth'],
+        "score_accuracy": score['accuracy'],
+        "score_connectivity": score['connectivity'],
+        "concepts_known": evaluation['concepts_known'],
+        "concepts_weak": evaluation['concepts_weak'],
+        "concepts_missing": evaluation['concepts_missing'],
+        "misconceptions": evaluation['misconceptions'],
+        "next_concepts": evaluation['next_concepts'],
+        "duration_seconds": evaluation['duration_seconds']
     }
+
+    payload = build_results_payload(
+        eval_session_dict,
+        topic,
+        concepts,
+        score_delta=delta,
+        previous_score=prev_score,
+        concept_evidence=evaluation['concept_evidence'],
+        next_concepts_detail=evaluation['next_concepts_detail']
+    )
+
+    return {"data": payload}
 
 @router.get("/{session_id}/results")
 async def get_results(
@@ -464,4 +526,30 @@ async def get_results(
             "code": "session_not_found",
             "message": "Session not found"
         })
-    return {"data": session}
+
+    topic = await topic_repo.get_by_id(
+        db, session['topic_id']
+    )
+    concepts = await concept_repo.get_by_topic(
+        db, session['topic_id']
+    )
+
+    prev_score = await session_repo.get_previous_score(
+        db, user.id, session['topic_id'], session_id
+    )
+
+    delta = (
+        session['score_overall'] - prev_score
+        if session.get('score_overall') is not None and prev_score is not None
+        else None
+    )
+
+    payload = build_results_payload(
+        session,
+        topic,
+        concepts,
+        score_delta=delta,
+        previous_score=prev_score
+    )
+
+    return {"data": payload}
