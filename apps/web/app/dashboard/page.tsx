@@ -32,7 +32,8 @@ export default function DashboardPage() {
 
       try {
         const result = await usersAPI.getTopicStatus()
-        setTopics(result?.topics || [])
+        const topicList = Array.isArray(result) ? result : (Array.isArray(result?.topics) ? result.topics : [])
+        setTopics(topicList)
       } catch (error) {
         console.error('Failed to load topic status:', error)
         setTopics([])
@@ -40,7 +41,8 @@ export default function DashboardPage() {
 
       try {
         const result = await usersAPI.getSessions(3)
-        setRecentSessions(result?.sessions || [])
+        const sessionList = Array.isArray(result) ? result : (Array.isArray(result?.sessions) ? result.sessions : [])
+        setRecentSessions(sessionList)
       } catch (error) {
         console.error('Failed to load sessions:', error)
         setRecentSessions([])
@@ -48,7 +50,8 @@ export default function DashboardPage() {
 
       try {
         const result = await usersAPI.getTopWeaknesses(5)
-        setWeaknesses(result?.weaknesses || [])
+        const weaknessList = Array.isArray(result) ? result : (Array.isArray(result?.weaknesses) ? result.weaknesses : [])
+        setWeaknesses(weaknessList)
       } catch (error) {
         console.error('Failed to load weaknesses:', error)
         setWeaknesses([])

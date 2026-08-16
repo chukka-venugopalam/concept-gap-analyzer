@@ -13,7 +13,8 @@ export default function TopicsPage() {
     async function loadTopics() {
       try {
         const result = await usersAPI.getTopicStatus()
-        setTopics(result?.topics || [])
+        const topicList = Array.isArray(result) ? result : (Array.isArray(result?.topics) ? result.topics : [])
+        setTopics(topicList)
       } catch (error) {
         console.error('Failed to load topics:', error)
         setTopics([])
