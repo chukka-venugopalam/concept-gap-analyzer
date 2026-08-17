@@ -17,6 +17,16 @@ export default function ResultsPage() {
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [copied, setCopied] = useState(false)
+
+  const handleShare = async () => {
+    if (typeof window !== 'undefined' && sessionId) {
+      const shareUrl = `${window.location.origin}/share/${sessionId}`
+      await navigator.clipboard.writeText(shareUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
 
   useEffect(() => {
     async function loadResults() {
@@ -55,17 +65,6 @@ export default function ResultsPage() {
         </div>
       </AppShell>
     )
-  }
-
-  const [copied, setCopied] = useState(false)
-
-  const handleShare = async () => {
-    if (typeof window !== 'undefined' && sessionId) {
-      const shareUrl = `${window.location.origin}/share/${sessionId}`
-      await navigator.clipboard.writeText(shareUrl)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    }
   }
 
   return (
