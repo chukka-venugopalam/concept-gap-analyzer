@@ -179,15 +179,31 @@ async def analyze_stage1(
         """, existing['topic_id'], probe_count)
 
         from ai.probe_generator import ProbeItem
-        probes = [
-            ProbeItem(
-                id=f"fp_{i}",
-                context_reference="",
-                question=fp['question'],
-                target_concept_id=""
-            )
-            for i, fp in enumerate(fallback)
-        ]
+        if fallback:
+            probes = [
+                ProbeItem(
+                    id=f"fp_{i}",
+                    context_reference="",
+                    question=fp['question'],
+                    target_concept_id=""
+                )
+                for i, fp in enumerate(fallback)
+            ]
+        else:
+            probes = [
+                ProbeItem(
+                    id="fp_default_1",
+                    context_reference="",
+                    question=f"What key properties, operations, or edge cases are most important when working with {existing['topic_id']}?",
+                    target_concept_id=""
+                ),
+                ProbeItem(
+                    id="fp_default_2",
+                    context_reference="",
+                    question=f"What are the time and space complexity trade-offs for {existing['topic_id']}?",
+                    target_concept_id=""
+                )
+            ][:probe_count]
 
     probes_raw = [
         {
