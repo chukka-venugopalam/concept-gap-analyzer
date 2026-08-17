@@ -33,4 +33,7 @@ export const sessionsAPI = {
 
   getResults: (sessionId: string) =>
     api.get<any>(`/session/${sessionId}/results`),
+
+  getPublicResults: (sessionId: string) =>
+    api.get<any>(`/session/${sessionId}/public`),
 }

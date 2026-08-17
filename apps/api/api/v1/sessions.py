@@ -179,31 +179,15 @@ async def analyze_stage1(
         """, existing['topic_id'], probe_count)
 
         from ai.probe_generator import ProbeItem
-        if fallback:
-            probes = [
-                ProbeItem(
-                    id=f"fp_{i}",
-                    context_reference="",
-                    question=fp['question'],
-                    target_concept_id=""
-                )
-                for i, fp in enumerate(fallback)
-            ]
-        else:
-            probes = [
-                ProbeItem(
-                    id="fp_default_1",
-                    context_reference="",
-                    question=f"What key properties, operations, or edge cases are most important when working with {existing['topic_id']}?",
-                    target_concept_id=""
-                ),
-                ProbeItem(
-                    id="fp_default_2",
-                    context_reference="",
-                    question=f"What are the time and space complexity trade-offs for {existing['topic_id']}?",
-                    target_concept_id=""
-                )
-            ][:probe_count]
+        probes = [
+            ProbeItem(
+                id=f"fp_{i}",
+                context_reference="",
+                question=fp['question'],
+                target_concept_id=""
+            )
+            for i, fp in enumerate(fallback)
+        ]
 
     probes_raw = [
         {
@@ -568,4 +552,16 @@ async def get_results(
         previous_score=prev_score
     )
 
+    return {"data": payload}
+
+@router.get("/{session_id}/public")
+async def get_public_results(session_id: str, db=Depends(get_db)):
+    session = await session_repo.get_by_id_public(db, session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail={
+            "code": "not_found", "message": "Results not found"
+        })
+    topic = await topic_repo.get_by_id(db, session['topic_id'])
+    concepts = await concept_repo.get_by_topic(db, session['topic_id'])
+    payload = build_results_payload(session, topic, concepts)
     return {"data": payload}

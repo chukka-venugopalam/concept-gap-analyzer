@@ -152,6 +152,24 @@ class SessionRepository(BaseRepository):
               AND s.user_id = $2::uuid
         """, session_id, user_id)
 
+    async def get_by_id_public(self, conn, session_id: str) -> dict | None:
+        return await self.fetch_one(conn, """
+            SELECT
+              s.id::text AS session_id,
+              s.topic_id,
+              t.name AS topic_name,
+              s.session_number,
+              s.status,
+              s.score_overall, s.score_coverage, s.score_depth,
+              s.score_accuracy, s.score_connectivity,
+              s.concepts_known, s.concepts_weak, s.concepts_missing,
+              s.misconceptions, s.next_concepts,
+              s.completed_at, s.duration_seconds
+            FROM sessions s
+            JOIN topics t ON t.id = s.topic_id
+            WHERE s.id = $1::uuid AND s.status = 'complete'
+        """, session_id)
+
     async def get_user_sessions(
         self, conn, user_id: str,
         limit: int = 5,

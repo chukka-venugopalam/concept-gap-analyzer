@@ -46,12 +46,10 @@ export default function SessionRunPage() {
         const sid = newSession?.session_id || newSession?.data?.session_id || newSession?.id || newSession?.data?.id
         if (sid) {
           setSessionId(sid)
-        } else {
-          setError('Session initialization failed: Could not obtain session ID.')
         }
       } catch (err: any) {
         console.error('[SESSION] Init failed:', err)
-        setError('Session initialization failed: ' + (err.message || 'Network error'))
+        setError('Session initialization failed.')
       } finally {
         setLoading(false)
       }
@@ -69,26 +67,8 @@ export default function SessionRunPage() {
       setLoadingText('Mapping your explanation...')
 
       const res = await sessionsAPI.analyzeStage1(sessionId, stage1Text)
-      const generatedProbes = Array.isArray(res?.probes)
-        ? res.probes
-        : (Array.isArray(res?.data?.probes) ? res.data.probes : [])
-
-      const safeProbes = generatedProbes.length > 0 ? generatedProbes : [
-        {
-          id: 'fp_client_1',
-          context_reference: '',
-          question: `What key properties or operations are most important when working with ${topicName}?`,
-          target_concept_id: ''
-        },
-        {
-          id: 'fp_client_2',
-          context_reference: '',
-          question: `What are the time and space complexity trade-offs for ${topicName}?`,
-          target_concept_id: ''
-        }
-      ]
-
-      setProbes(safeProbes)
+      const generatedProbes = res?.probes || []
+      setProbes(generatedProbes)
       setCurrentProbeIndex(0)
       setStage(2)
     } catch (err: any) {
@@ -191,7 +171,7 @@ export default function SessionRunPage() {
           <Button
             size="lg"
             className="w-full"
-            disabled={loading || !sessionId || wordCount < 50}
+            disabled={loading || wordCount < 50}
             onClick={handleStage1Submit}
           >
             Continue →

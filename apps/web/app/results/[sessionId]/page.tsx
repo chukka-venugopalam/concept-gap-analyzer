@@ -57,6 +57,17 @@ export default function ResultsPage() {
     )
   }
 
+  const [copied, setCopied] = useState(false)
+
+  const handleShare = async () => {
+    if (typeof window !== 'undefined' && sessionId) {
+      const shareUrl = `${window.location.origin}/share/${sessionId}`
+      await navigator.clipboard.writeText(shareUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
   return (
     <AppShell>
       {/* SECTION 1 — Header */}
@@ -68,10 +79,20 @@ export default function ResultsPage() {
           <h1 className="font-display font-bold text-2xl text-primary">
             Session #{data.session_number || 1} Report
           </h1>
-          <span className="text-xs text-secondary font-mono">
-            {data.completed_at ? new Date(data.completed_at).toLocaleDateString() : ''}
-            {data.duration_seconds && ` • ${formatDuration(data.duration_seconds)}`}
-          </span>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleShare}
+              className="text-xs"
+            >
+              {copied ? 'Link copied' : 'Share'}
+            </Button>
+            <span className="text-xs text-secondary font-mono">
+              {data.completed_at ? new Date(data.completed_at).toLocaleDateString() : ''}
+              {data.duration_seconds && ` • ${formatDuration(data.duration_seconds)}`}
+            </span>
+          </div>
         </div>
       </div>
 
