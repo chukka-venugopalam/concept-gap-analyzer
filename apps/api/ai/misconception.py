@@ -19,7 +19,7 @@ async def validate_misconception(
     try:
         client = get_gemini_client()
         response = client.models.generate_content(
-            model='gemini-2.0-flash',
+            model='gemini-3.6-flash',
             contents=prompt
         )
         content = response.text.strip()

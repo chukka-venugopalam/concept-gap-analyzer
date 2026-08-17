@@ -24,7 +24,7 @@ async def run_extraction(
         try:
             client = get_gemini_client()
             response = client.models.generate_content(
-                model='gemini-2.0-flash',
+                model='gemini-3.6-flash',
                 contents=prompt
             )
             content = response.text.strip()
@@ -58,6 +58,7 @@ async def run_extraction(
                 f"Extraction attempt "
                 f"{attempt+1} failed: {e}"
             )
+            print(f"[EXTRACTION] FAILED attempt {attempt+1}: {e}")
             if attempt == MAX_RETRIES - 1:
                 return ExtractionResult(
                     extracted_concepts=[]
