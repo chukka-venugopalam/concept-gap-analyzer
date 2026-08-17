@@ -57,6 +57,20 @@ export const TopicCard: React.FC<TopicCardProps> = ({
             <ProgressBar value={lastScore} color={getScoreColor(lastScore)} showPercent={false} />
           </div>
         )}
+
+        {sessionCount > 0 && (
+          <div className="mb-4">
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                router.push(`/topics/${topicId}/history`)
+              }}
+              className="text-xs text-accent hover:underline font-medium transition-all cursor-pointer"
+            >
+              View history →
+            </button>
+          </div>
+        )}
       </div>
 
       <Button
