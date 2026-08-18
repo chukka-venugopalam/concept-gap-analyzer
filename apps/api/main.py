@@ -15,8 +15,10 @@ async def lifespan(app: FastAPI):
     print(f"[STARTUP] DB URL set: {bool(settings.database_url)}")
     print(f"[STARTUP] XAI key set: {bool(settings.xai_api_key)}")
     try:
-        await get_pool()
-        print("[STARTUP] Database connected successfully")
+        pool = await get_pool()
+        async with pool.acquire() as conn:
+            await conn.execute("ALTER TABLE sessions ADD COLUMN IF NOT EXISTS extraction_degraded BOOLEAN DEFAULT FALSE;")
+        print("[STARTUP] Database connected successfully and schema updated")
     except Exception as e:
         print(f"[STARTUP] Database connection failed: {e}")
     yield

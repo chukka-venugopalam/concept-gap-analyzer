@@ -431,7 +431,8 @@ def build_results_payload(
         "misconceptions": misconceptions,
         "next_concepts": next_concepts,
         "completed_at": completed_at,
-        "duration_seconds": session.get('duration_seconds', 0)
+        "duration_seconds": session.get('duration_seconds', 0),
+        "extraction_degraded": bool(session.get('extraction_degraded', False))
     }
 
 @router.post("/evaluate")
@@ -513,7 +514,8 @@ async def evaluate(
         "concepts_missing": evaluation['concepts_missing'],
         "misconceptions": evaluation['misconceptions'],
         "next_concepts": evaluation['next_concepts'],
-        "duration_seconds": evaluation['duration_seconds']
+        "duration_seconds": evaluation['duration_seconds'],
+        "extraction_degraded": evaluation.get('extraction_degraded', False)
     }
 
     payload = build_results_payload(

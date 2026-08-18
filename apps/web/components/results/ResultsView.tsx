@@ -20,6 +20,15 @@ export function ResultsView({ data }: { data: any }) {
 
   return (
     <>
+      {data.extraction_degraded && (
+        <div className="bg-weak/10 text-weak border border-weak/20 p-4 rounded-xl mb-6 text-xs flex items-start gap-2">
+          <span className="shrink-0">⚠️</span>
+          <span>
+            AI analysis was temporarily degraded during this session (high demand on our AI provider). This score may not reflect what you actually know — consider retaking this diagnostic.
+          </span>
+        </div>
+      )}
+
       {/* SECTION 2 — Score Block */}
       <section className="bg-surface border border-border rounded-xl p-6 mb-8">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-6">

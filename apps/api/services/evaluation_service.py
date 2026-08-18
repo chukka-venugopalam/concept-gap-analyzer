@@ -56,6 +56,10 @@ async def evaluate_session(
         rule_candidates, ai_result.extracted_concepts
     )
 
+    extraction_degraded = (
+        len(merged) == 0 and len(rule_candidates) == 0
+    )
+
     diff = compute_graph_diff(merged, concepts)
 
     confirmed_misconceptions = []
@@ -133,7 +137,8 @@ async def evaluate_session(
             }
             for c in merged
         ],
-        'duration_seconds': duration
+        'duration_seconds': duration,
+        'extraction_degraded': extraction_degraded
     }
 
 def _get_reason(

@@ -106,8 +106,9 @@ class SessionRepository(BaseRepository):
               misconceptions = $9::jsonb,
               next_concepts = $10,
               completed_at = NOW(),
-              duration_seconds = $11
-            WHERE id = $12::uuid
+              duration_seconds = $11,
+              extraction_degraded = $12
+            WHERE id = $13::uuid
         """,
             score['overall'],
             score['coverage'],
@@ -120,6 +121,7 @@ class SessionRepository(BaseRepository):
             json.dumps(evaluation['misconceptions']),
             evaluation['next_concepts'],
             evaluation['duration_seconds'],
+            evaluation.get('extraction_degraded', False),
             session_id
         )
 
@@ -145,7 +147,8 @@ class SessionRepository(BaseRepository):
               s.misconceptions,
               s.next_concepts,
               s.completed_at,
-              s.duration_seconds
+              s.duration_seconds,
+              s.extraction_degraded
             FROM sessions s
             JOIN topics t ON t.id = s.topic_id
             WHERE s.id = $1::uuid
@@ -164,7 +167,8 @@ class SessionRepository(BaseRepository):
               s.score_accuracy, s.score_connectivity,
               s.concepts_known, s.concepts_weak, s.concepts_missing,
               s.misconceptions, s.next_concepts,
-              s.completed_at, s.duration_seconds
+              s.completed_at, s.duration_seconds,
+              s.extraction_degraded
             FROM sessions s
             JOIN topics t ON t.id = s.topic_id
             WHERE s.id = $1::uuid AND s.status = 'complete'

@@ -1,5 +1,6 @@
 import logging
 import json
+import asyncio
 from ai.client import get_gemini_client
 from pydantic import BaseModel, Field
 from typing import Literal
@@ -19,7 +20,7 @@ class ExtractionResult(BaseModel):
 async def run_extraction(
     prompt: str
 ) -> ExtractionResult:
-    MAX_RETRIES = 2
+    MAX_RETRIES = 3
     for attempt in range(MAX_RETRIES):
         try:
             client = get_gemini_client()
@@ -65,7 +66,9 @@ async def run_extraction(
                 f"{attempt+1} failed: {e}"
             )
             print(f"[EXTRACTION] FAILED attempt {attempt+1}: {e}")
-            if attempt == MAX_RETRIES - 1:
+            if attempt < MAX_RETRIES - 1:
+                await asyncio.sleep(2 ** attempt)
+            else:
                 return ExtractionResult(
                     extracted_concepts=[]
                 )
