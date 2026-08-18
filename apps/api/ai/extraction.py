@@ -30,6 +30,7 @@ async def run_extraction(
             content = response.text.strip()
             print(f"[EXTRACTION] Response "
                   f"({len(content)} chars)")
+            print(f"[EXTRACTION] Raw text: {repr(content)}")
 
             if content.startswith("```"):
                 lines = content.split("\n")
@@ -44,8 +45,13 @@ async def run_extraction(
                     concepts.append(
                         ExtractedConcept(**item)
                     )
-                except Exception:
-                    pass
+                except Exception as parse_err:
+                    logger.error(
+                        f"[EXTRACTION] Item parse failed: {parse_err} for item: {item}"
+                    )
+                    print(
+                        f"[EXTRACTION] Item parse failed: {parse_err} for item: {item}"
+                    )
 
             print(f"[EXTRACTION] Got "
                   f"{len(concepts)} concepts")
