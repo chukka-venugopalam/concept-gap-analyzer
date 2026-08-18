@@ -11,6 +11,7 @@ interface ConceptCardProps {
   gapExplanation?: string
   importance?: string
   defaultExpanded?: boolean
+  resources?: { title: string; url: string }[]
 }
 
 export const ConceptCard: React.FC<ConceptCardProps> = ({
@@ -19,7 +20,8 @@ export const ConceptCard: React.FC<ConceptCardProps> = ({
   evidenceQuote,
   gapExplanation,
   importance,
-  defaultExpanded = false
+  defaultExpanded = false,
+  resources
 }) => {
   const [expanded, setExpanded] = useState(defaultExpanded || status === 'weak')
 
@@ -60,6 +62,29 @@ export const ConceptCard: React.FC<ConceptCardProps> = ({
             <p className="text-muted italic font-mono bg-surface-2 p-2 rounded">
               "{evidenceQuote}"
             </p>
+          )}
+          {resources && resources.length > 0 && (
+            <div className="pt-1">
+              <span className="text-[10px] uppercase font-mono tracking-wider text-muted block mb-1">
+                Remediation Resources
+              </span>
+              <ul className="space-y-1">
+                {resources.map((res, idx) => (
+                  <li key={idx}>
+                    <a
+                      href={res.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-accent hover:underline font-medium inline-flex items-center gap-1"
+                    >
+                      <span>{res.title}</span>
+                      <span className="text-[10px]">↗</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </div>
       )}

@@ -18,6 +18,15 @@ async def lifespan(app: FastAPI):
         pool = await get_pool()
         async with pool.acquire() as conn:
             await conn.execute("ALTER TABLE sessions ADD COLUMN IF NOT EXISTS extraction_degraded BOOLEAN DEFAULT FALSE;")
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS concept_resources (
+                  id SERIAL PRIMARY KEY,
+                  concept_id TEXT NOT NULL REFERENCES concepts(id),
+                  title TEXT NOT NULL,
+                  url TEXT NOT NULL,
+                  display_order INT DEFAULT 0
+                );
+            """)
         print("[STARTUP] Database connected successfully and schema updated")
     except Exception as e:
         print(f"[STARTUP] Database connection failed: {e}")

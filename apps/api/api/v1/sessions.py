@@ -319,13 +319,26 @@ def build_results_payload(
     score_delta: int | None = None,
     previous_score: int | None = None,
     concept_evidence: list[dict] | None = None,
-    next_concepts_detail: list[dict] | None = None
+    next_concepts_detail: list[dict] | None = None,
+    resources: list[dict] | None = None
 ) -> dict:
     concept_map = {c['id']: c for c in concepts}
 
     known_ids = session.get('concepts_known') or []
     weak_ids = session.get('concepts_weak') or []
     missing_ids = session.get('concepts_missing') or []
+
+    resource_map: dict[str, list[dict]] = {}
+    if resources:
+        for r in resources:
+            cid = r.get('concept_id')
+            if cid:
+                if cid not in resource_map:
+                    resource_map[cid] = []
+                resource_map[cid].append({
+                    "title": r.get('title', ''),
+                    "url": r.get('url', '')
+                })
 
     evidence_list = concept_evidence or []
     evidence_map = {
@@ -348,7 +361,8 @@ def build_results_payload(
             "concept_name": concept_map.get(cid, {}).get('name', cid),
             "gap_explanation": f"You mentioned {concept_map.get(cid, {}).get('name', cid)} but didn't explain it fully",
             "evidence_quote": evidence_map.get(cid, {}).get('evidence_quote', ""),
-            "stage_source": 1
+            "stage_source": 1,
+            "resources": resource_map.get(cid, [])
         }
         for cid in weak_ids
     ]
@@ -358,7 +372,8 @@ def build_results_payload(
             "concept_id": cid,
             "concept_name": concept_map.get(cid, {}).get('name', cid),
             "importance": "high" if concept_map.get(cid, {}).get('importance_weight', 2) >= 3 else "medium",
-            "prerequisite_for": []
+            "prerequisite_for": [],
+            "resources": resource_map.get(cid, [])
         }
         for cid in missing_ids
     ]
@@ -518,6 +533,10 @@ async def evaluate(
         "extraction_degraded": evaluation.get('extraction_degraded', False)
     }
 
+    topic_resources = await concept_repo.get_resources(
+        db, session['topic_id']
+    )
+
     payload = build_results_payload(
         eval_session_dict,
         topic,
@@ -525,7 +544,8 @@ async def evaluate(
         score_delta=delta,
         previous_score=prev_score,
         concept_evidence=evaluation['concept_evidence'],
-        next_concepts_detail=evaluation['next_concepts_detail']
+        next_concepts_detail=evaluation['next_concepts_detail'],
+        resources=topic_resources
     )
 
     return {"data": payload}
@@ -562,12 +582,17 @@ async def get_results(
         else None
     )
 
+    topic_resources = await concept_repo.get_resources(
+        db, session['topic_id']
+    )
+
     payload = build_results_payload(
         session,
         topic,
         concepts,
         score_delta=delta,
-        previous_score=prev_score
+        previous_score=prev_score,
+        resources=topic_resources
     )
 
     return {"data": payload}
@@ -581,5 +606,6 @@ async def get_public_results(session_id: str, db=Depends(get_db)):
         })
     topic = await topic_repo.get_by_id(db, session['topic_id'])
     concepts = await concept_repo.get_by_topic(db, session['topic_id'])
-    payload = build_results_payload(session, topic, concepts)
+    topic_resources = await concept_repo.get_resources(db, session['topic_id'])
+    payload = build_results_payload(session, topic, concepts, resources=topic_resources)
     return {"data": payload}

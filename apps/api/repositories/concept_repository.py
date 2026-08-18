@@ -42,4 +42,13 @@ class ConceptRepository(BaseRepository):
             WHERE c.topic_id = $1
         """, topic_id)
 
+    async def get_resources(self, conn, topic_id: str) -> list[dict]:
+        return await self.fetch_all(conn, """
+            SELECT cr.concept_id, cr.title, cr.url
+            FROM concept_resources cr
+            JOIN concepts c ON c.id = cr.concept_id
+            WHERE c.topic_id = $1
+            ORDER BY cr.concept_id, cr.display_order
+        """, topic_id)
+
 concept_repo = ConceptRepository()

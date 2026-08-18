@@ -98,6 +98,7 @@ export function ResultsView({ data }: { data: any }) {
                 status="weak"
                 gapExplanation={c.gap_explanation}
                 evidenceQuote={c.evidence_quote}
+                resources={c.resources}
               />
             ))}
           </div>
@@ -114,6 +115,7 @@ export function ResultsView({ data }: { data: any }) {
                 conceptName={c.concept_name}
                 status="missing"
                 importance={c.importance}
+                resources={c.resources}
               />
             ))}
           </div>
