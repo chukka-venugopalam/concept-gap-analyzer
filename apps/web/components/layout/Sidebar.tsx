@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { AnimatePresence, motion } from 'framer-motion'
 import { createClient } from '@/lib/supabase'
+import { usersAPI } from '@/lib/api/users'
 
 export function Sidebar() {
   const pathname = usePathname()
@@ -13,11 +14,25 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [profile, setProfile] = useState<any>(null)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setCollapsed(localStorage.getItem('cip_sidebar_collapsed') === 'true')
     }
+  }, [])
+
+  useEffect(() => {
+    async function fetchProfile() {
+      try {
+        const res = await usersAPI.getProfile()
+        const data = res?.data || res
+        if (data) setProfile(data)
+      } catch (err) {
+        console.error('Failed to load profile in sidebar:', err)
+      }
+    }
+    fetchProfile()
   }, [])
 
   const toggleCollapse = () => {
@@ -42,6 +57,15 @@ export function Sidebar() {
     }
     window.location.href = '/auth'
   }
+
+  const avatarLetter = (
+    profile?.display_name?.[0] ||
+    profile?.email?.[0] ||
+    'U'
+  ).toUpperCase()
+
+  const accountName = profile?.display_name || profile?.email || 'User Account'
+  const accountSubtext = profile?.email || 'Settings & Out'
 
   const navItems = [
     {
@@ -151,12 +175,12 @@ export function Sidebar() {
             className="flex items-center gap-3 w-full text-left hover:opacity-80 transition-opacity"
           >
             <div className="w-8 h-8 rounded-full bg-accent/20 border border-accent/40 text-accent font-display font-bold text-xs flex items-center justify-center shrink-0">
-              U
+              {avatarLetter}
             </div>
             {(isMobile || !collapsed) && (
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-primary truncate">User Account</p>
-                <p className="text-[10px] text-secondary font-mono truncate">Settings & Out</p>
+                <p className="text-xs font-medium text-primary truncate">{accountName}</p>
+                <p className="text-[10px] text-secondary font-mono truncate">{accountSubtext}</p>
               </div>
             )}
           </button>
@@ -169,6 +193,16 @@ export function Sidebar() {
               !isMobile && collapsed ? 'left-14 w-44' : 'left-4 right-4'
             } bg-surface border border-border rounded-lg shadow-xl py-1 z-50`}
           >
+            <Link
+              href="/profile"
+              className="block px-4 py-2 text-sm text-secondary hover:text-primary hover:bg-surface-2"
+              onClick={() => {
+                setDropdownOpen(false)
+                if (isMobile) setMobileOpen(false)
+              }}
+            >
+              Profile
+            </Link>
             <Link
               href="/topics"
               className="block px-4 py-2 text-sm text-secondary hover:text-primary hover:bg-surface-2"
