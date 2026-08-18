@@ -71,4 +71,11 @@ class LearnerStateRepository(BaseRepository):
             LIMIT $2
         """, user_id, limit)
 
+    async def get_states_by_topic(self, conn, user_id: str, topic_id: str) -> list[dict]:
+        return await self.fetch_all(conn, """
+            SELECT concept_id, current_status
+            FROM learner_concept_states
+            WHERE user_id = $1::uuid AND topic_id = $2
+        """, user_id, topic_id)
+
 learner_repo = LearnerStateRepository()

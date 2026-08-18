@@ -6,4 +6,7 @@ export const topicsAPI = {
 
   getSessions: (topicId: string) =>
     api.get<any>(`/topics/${topicId}/sessions`),
+
+  getGraph: (topicId: string) =>
+    api.get<any>(`/topics/${topicId}/graph`),
 }
