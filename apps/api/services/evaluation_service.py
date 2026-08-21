@@ -43,6 +43,10 @@ async def evaluate_session(
         r.get('response', '') for r in stage2
     ])
 
+    print(f"[DIAG] topic_id={topic['id']} concept_count={len(concepts)}")
+    print(f"[DIAG] full_text ({len(full_text)} chars): {repr(full_text[:500])}")
+    print(f"[DIAG] sample_keywords: {[(c['id'], c.get('canonical_keywords', [])) for c in concepts[:3]]}")
+
     rule_candidates = rule_based_extraction(
         full_text, concepts
     )

@@ -17,6 +17,8 @@ def rule_based_extraction(
                     1.0
                 )
             })
+    print(f"[DIAG] rule_based checked {len(concepts)} concepts, "
+          f"found {len(candidates)} candidates: {candidates}")
     return candidates
 
 def merge_extraction_results(
