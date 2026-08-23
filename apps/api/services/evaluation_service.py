@@ -43,13 +43,17 @@ async def evaluate_session(
         r.get('response', '') for r in stage2
     ])
 
-    print(f"[DIAG] topic_id={topic['id']} concept_count={len(concepts)}")
-    print(f"[DIAG] full_text ({len(full_text)} chars): {repr(full_text[:500])}")
-    print(f"[DIAG] sample_keywords: {[(c['id'], c.get('canonical_keywords', [])) for c in concepts[:3]]}")
-
     rule_candidates = rule_based_extraction(
         full_text, concepts
     )
+
+    print(f"[DIAG] session={session.get('id')} topic={topic['id']}")
+    print(f"[DIAG] stage1_response repr: {repr(stage1)}")
+    print(f"[DIAG] stage2_responses count: {len(stage2)}")
+    print(f"[DIAG] full_text ({len(full_text)} chars) repr: {repr(full_text)}")
+    print(f"[DIAG] concepts_fetched: {len(concepts)} for topic {topic['id']}")
+    print(f"[DIAG] concept_keywords_sample: {[(c['id'], c.get('canonical_keywords')) for c in concepts[:3]]}")
+    print(f"[DIAG] rule_candidates: {rule_candidates}")
 
     extraction_prompt = build_extraction_prompt(
         topic['name'], concepts,
