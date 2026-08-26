@@ -118,6 +118,7 @@ async def analyze_stage1(
     user: CurrentUser = Depends(get_current_user),
     db=Depends(get_db)
 ):
+    print(f"[DIAG-ID] stage1 session_id={body.session_id}")
     existing = await session_repo.get_by_id(
         db, body.session_id, user.id
     )
@@ -236,6 +237,7 @@ async def analyze_stage2(
     user: CurrentUser = Depends(get_current_user),
     db=Depends(get_db)
 ):
+    print(f"[DIAG-ID] stage2 session_id={body.session_id}")
     existing = await session_repo.get_by_id(
         db, body.session_id, user.id
     )
@@ -291,6 +293,7 @@ async def analyze_stage3(
     user: CurrentUser = Depends(get_current_user),
     db=Depends(get_db)
 ):
+    print(f"[DIAG-ID] stage3 session_id={body.session_id}")
     existing = await session_repo.get_by_id(
         db, body.session_id, user.id
     )
@@ -456,6 +459,7 @@ async def evaluate(
     user: CurrentUser = Depends(get_current_user),
     db=Depends(get_db)
 ):
+    print(f"[DIAG-ID] evaluate session_id={body.session_id}")
     session = await session_repo.get_by_id(
         db, body.session_id, user.id
     )

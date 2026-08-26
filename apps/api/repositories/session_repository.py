@@ -55,7 +55,7 @@ class SessionRepository(BaseRepository):
         response: str, probes: list,
         probes_raw: list
     ) -> None:
-        await self.execute(conn, """
+        result = await self.execute(conn, """
             UPDATE sessions
             SET stage1_response = $1,
                 probes_generated = $2::jsonb
@@ -63,12 +63,13 @@ class SessionRepository(BaseRepository):
         """, response,
              json.dumps(probes_raw),
              session_id)
+        print(f"[DIAG-WRITE] update_stage1 session_id={session_id} result={result}")
 
     async def update_stage2(
         self, conn, session_id: str,
         responses: list, challenge: dict
     ) -> None:
-        await self.execute(conn, """
+        result = await self.execute(conn, """
             UPDATE sessions
             SET stage2_responses = $1::jsonb,
                 challenge_task = $2::jsonb
@@ -76,6 +77,7 @@ class SessionRepository(BaseRepository):
         """, json.dumps(responses),
              json.dumps(challenge),
              session_id)
+        print(f"[DIAG-WRITE] update_stage2 session_id={session_id} result={result}")
 
     async def update_stage3(
         self, conn, session_id: str,
