@@ -16,6 +16,7 @@ export default function SessionRunPage() {
 
   const topicObj = TOPICS.find((t) => t.id === topicId)
   const topicName = topicObj ? topicObj.name : topicId
+  const storageKey = `cip_active_session_${topicId}`
 
   const [stage, setStage] = useState<1 | 2 | 3 | 'loading'>(1)
   const [sessionId, setSessionId] = useState<string | null>(null)
@@ -39,6 +40,13 @@ export default function SessionRunPage() {
 
   useEffect(() => {
     async function initSession() {
+      const existing = typeof window !== 'undefined' ? sessionStorage.getItem(storageKey) : null
+      if (existing) {
+        setSessionId(existing)
+        setLoading(false)
+        return
+      }
+
       try {
         setLoading(true)
         setError('')
@@ -46,6 +54,9 @@ export default function SessionRunPage() {
         const sid = newSession?.session_id || newSession?.data?.session_id || newSession?.id || newSession?.data?.id
         if (sid) {
           setSessionId(sid)
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem(storageKey, sid)
+          }
         } else {
           setError('Session initialization failed: Could not obtain session ID.')
         }
@@ -59,7 +70,7 @@ export default function SessionRunPage() {
     if (topicId) {
       initSession()
     }
-  }, [topicId])
+  }, [topicId, storageKey])
 
   const handleStage1Submit = async () => {
     if (!sessionId) return
@@ -129,6 +140,9 @@ export default function SessionRunPage() {
       const evalRes = await sessionsAPI.evaluate(sessionId)
 
       if (evalRes?.session_id) {
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem(storageKey)
+        }
         router.push(`/results/${evalRes.session_id}`)
       }
     } catch (err: any) {
