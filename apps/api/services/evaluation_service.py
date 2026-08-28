@@ -1,4 +1,5 @@
 import time
+import json
 import logging
 from ai.extraction import run_extraction
 from ai.probe_generator import generate_probes
@@ -37,7 +38,8 @@ async def evaluate_session(
     start = time.time()
 
     stage1 = session.get('stage1_response', '')
-    stage2 = session.get('stage2_responses', [])
+    stage2_raw = session.get('stage2_responses', [])
+    stage2 = json.loads(stage2_raw) if isinstance(stage2_raw, str) else stage2_raw
     stage3 = session.get('stage3_response', '')
     full_text = f"{stage1} {stage3} " + " ".join([
         r.get('response', '') for r in stage2
