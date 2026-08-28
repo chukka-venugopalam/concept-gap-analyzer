@@ -469,17 +469,6 @@ async def evaluate(
             "message": "Session not found"
         })
 
-    import asyncio
-    if not session.get('stage1_response'):
-        for attempt in range(3):
-            await asyncio.sleep(0.3 * (attempt + 1))
-            session = await session_repo.get_by_id(db, body.session_id, user.id)
-            if session and session.get('stage1_response'):
-                print(f"[DIAG-RETRY] session data appeared on attempt {attempt+1}")
-                break
-        else:
-            print(f"[DIAG-RETRY] session still blank after 3 retries — not a timing issue")
-
     topic = await topic_repo.get_by_id(
         db, session['topic_id']
     )
