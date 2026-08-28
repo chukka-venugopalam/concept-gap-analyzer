@@ -22,7 +22,7 @@ export async function middleware(req: NextRequest) {
     const { data: { session } } = await supabase.auth.getSession()
 
     const path = req.nextUrl.pathname
-    const isPublic = PUBLIC_ROUTES.some((r) => path === r)
+    const isPublic = PUBLIC_ROUTES.some((r) => path === r) || path.startsWith('/share/')
     const isAuthRoute = AUTH_ROUTES.some((r) => path.startsWith(r))
 
     if (isAuthRoute) return res
