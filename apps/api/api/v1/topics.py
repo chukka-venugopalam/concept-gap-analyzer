@@ -88,3 +88,69 @@ async def get_topic_graph(
             "edges": edge_list
         }
     }
+
+@router.get("/{topic_id}/library")
+async def get_topic_library(
+    topic_id: str,
+    user: CurrentUser = Depends(get_current_user),
+    db=Depends(get_db)
+):
+    topic = await topic_repo.get_by_id(db, topic_id)
+    if not topic:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "topic_not_found",
+                "message": f"Topic '{topic_id}' not found"
+            }
+        )
+    concepts = await concept_repo.get_by_topic(db, topic_id)
+    edges = await concept_repo.get_prerequisites(db, topic_id)
+    practice = await concept_repo.get_practice_problems(db, topic_id)
+    resources = await concept_repo.get_resources(db, topic_id)
+
+    nodes = [
+        {
+            "id": c['id'],
+            "name": c['name'],
+            "definition": c.get('definition', ''),
+            "real_world_example": c.get('real_world_example'),
+            "importance_weight": c.get('importance_weight', 2),
+            "resources": [
+                {
+                    "title": r.get('title', ''),
+                    "url": r.get('url', '')
+                }
+                for r in resources
+                if r['concept_id'] == c['id']
+            ],
+            "practice_problems": [
+                {
+                    "platform": p.get('platform', ''),
+                    "title": p.get('title', ''),
+                    "url": p.get('url', ''),
+                    "difficulty": p.get('difficulty', '')
+                }
+                for p in practice
+                if p['concept_id'] == c['id']
+            ]
+        }
+        for c in concepts
+    ]
+
+    edge_list = [
+        {
+            "source": e['concept_id'],
+            "target": e['prerequisite_id']
+        }
+        for e in edges
+    ]
+
+    return {
+        "data": {
+            "topic_id": topic_id,
+            "topic_name": topic['name'],
+            "nodes": nodes,
+            "edges": edge_list
+        }
+    }

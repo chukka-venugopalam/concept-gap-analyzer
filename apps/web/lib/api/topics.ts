@@ -9,4 +9,7 @@ export const topicsAPI = {
 
   getGraph: (topicId: string) =>
     api.get<any>(`/topics/${topicId}/graph`),
+
+  getLibrary: (topicId: string) =>
+    api.get<any>(`/topics/${topicId}/library`),
 }

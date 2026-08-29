@@ -18,6 +18,18 @@ async def lifespan(app: FastAPI):
         pool = await get_pool()
         async with pool.acquire() as conn:
             await conn.execute("ALTER TABLE sessions ADD COLUMN IF NOT EXISTS extraction_degraded BOOLEAN DEFAULT FALSE;")
+            await conn.execute("ALTER TABLE concepts ADD COLUMN IF NOT EXISTS real_world_example TEXT;")
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS concept_practice_problems (
+                  id SERIAL PRIMARY KEY,
+                  concept_id TEXT NOT NULL REFERENCES concepts(id),
+                  platform TEXT NOT NULL,
+                  title TEXT NOT NULL,
+                  url TEXT NOT NULL,
+                  difficulty TEXT NOT NULL,
+                  display_order INT DEFAULT 0
+                );
+            """)
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS concept_resources (
                   id SERIAL PRIMARY KEY,

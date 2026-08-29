@@ -323,7 +323,8 @@ def build_results_payload(
     previous_score: int | None = None,
     concept_evidence: list[dict] | None = None,
     next_concepts_detail: list[dict] | None = None,
-    resources: list[dict] | None = None
+    resources: list[dict] | None = None,
+    practice_problems: list[dict] | None = None
 ) -> dict:
     concept_map = {c['id']: c for c in concepts}
 
@@ -341,6 +342,20 @@ def build_results_payload(
                 resource_map[cid].append({
                     "title": r.get('title', ''),
                     "url": r.get('url', '')
+                })
+
+    practice_map: dict[str, list[dict]] = {}
+    if practice_problems:
+        for p in practice_problems:
+            cid = p.get('concept_id')
+            if cid:
+                if cid not in practice_map:
+                    practice_map[cid] = []
+                practice_map[cid].append({
+                    "platform": p.get('platform', ''),
+                    "title": p.get('title', ''),
+                    "url": p.get('url', ''),
+                    "difficulty": p.get('difficulty', '')
                 })
 
     evidence_list = concept_evidence or []
@@ -365,7 +380,9 @@ def build_results_payload(
             "gap_explanation": f"You mentioned {concept_map.get(cid, {}).get('name', cid)} but didn't explain it fully",
             "evidence_quote": evidence_map.get(cid, {}).get('evidence_quote', ""),
             "stage_source": 1,
-            "resources": resource_map.get(cid, [])
+            "real_world_example": concept_map.get(cid, {}).get('real_world_example'),
+            "resources": resource_map.get(cid, []),
+            "practice_problems": practice_map.get(cid, [])
         }
         for cid in weak_ids
     ]
@@ -376,7 +393,9 @@ def build_results_payload(
             "concept_name": concept_map.get(cid, {}).get('name', cid),
             "importance": "high" if concept_map.get(cid, {}).get('importance_weight', 2) >= 3 else "medium",
             "prerequisite_for": [],
-            "resources": resource_map.get(cid, [])
+            "real_world_example": concept_map.get(cid, {}).get('real_world_example'),
+            "resources": resource_map.get(cid, []),
+            "practice_problems": practice_map.get(cid, [])
         }
         for cid in missing_ids
     ]
@@ -540,6 +559,9 @@ async def evaluate(
     topic_resources = await concept_repo.get_resources(
         db, session['topic_id']
     )
+    topic_practice = await concept_repo.get_practice_problems(
+        db, session['topic_id']
+    )
 
     payload = build_results_payload(
         eval_session_dict,
@@ -549,7 +571,8 @@ async def evaluate(
         previous_score=prev_score,
         concept_evidence=evaluation['concept_evidence'],
         next_concepts_detail=evaluation['next_concepts_detail'],
-        resources=topic_resources
+        resources=topic_resources,
+        practice_problems=topic_practice
     )
 
     return {"data": payload}
@@ -589,6 +612,9 @@ async def get_results(
     topic_resources = await concept_repo.get_resources(
         db, session['topic_id']
     )
+    topic_practice = await concept_repo.get_practice_problems(
+        db, session['topic_id']
+    )
 
     payload = build_results_payload(
         session,
@@ -596,7 +622,8 @@ async def get_results(
         concepts,
         score_delta=delta,
         previous_score=prev_score,
-        resources=topic_resources
+        resources=topic_resources,
+        practice_problems=topic_practice
     )
 
     return {"data": payload}
@@ -611,5 +638,12 @@ async def get_public_results(session_id: str, db=Depends(get_db)):
     topic = await topic_repo.get_by_id(db, session['topic_id'])
     concepts = await concept_repo.get_by_topic(db, session['topic_id'])
     topic_resources = await concept_repo.get_resources(db, session['topic_id'])
-    payload = build_results_payload(session, topic, concepts, resources=topic_resources)
+    topic_practice = await concept_repo.get_practice_problems(db, session['topic_id'])
+    payload = build_results_payload(
+        session,
+        topic,
+        concepts,
+        resources=topic_resources,
+        practice_problems=topic_practice
+    )
     return {"data": payload}

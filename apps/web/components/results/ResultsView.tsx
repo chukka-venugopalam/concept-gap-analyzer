@@ -99,6 +99,8 @@ export function ResultsView({ data }: { data: any }) {
                 gapExplanation={c.gap_explanation}
                 evidenceQuote={c.evidence_quote}
                 resources={c.resources}
+                real_world_example={c.real_world_example}
+                practice_problems={c.practice_problems}
               />
             ))}
           </div>
@@ -116,6 +118,8 @@ export function ResultsView({ data }: { data: any }) {
                 status="missing"
                 importance={c.importance}
                 resources={c.resources}
+                real_world_example={c.real_world_example}
+                practice_problems={c.practice_problems}
               />
             ))}
           </div>

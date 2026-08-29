@@ -58,28 +58,39 @@ export const TopicCard: React.FC<TopicCardProps> = ({
           </div>
         )}
 
-        {sessionCount > 0 && (
-          <div className="mb-4 flex items-center gap-3">
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                router.push(`/topics/${topicId}/history`)
-              }}
-              className="text-xs text-accent hover:underline font-medium transition-all cursor-pointer"
-            >
-              View history →
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                router.push(`/topics/${topicId}/graph`)
-              }}
-              className="text-xs text-accent hover:underline font-medium transition-all cursor-pointer"
-            >
-              View graph →
-            </button>
-          </div>
-        )}
+        <div className="mb-4 flex items-center flex-wrap gap-3">
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              router.push(`/topics/${topicId}/library`)
+            }}
+            className="text-xs text-accent hover:underline font-medium transition-all cursor-pointer"
+          >
+            Browse concepts →
+          </button>
+          {sessionCount > 0 && (
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  router.push(`/topics/${topicId}/history`)
+                }}
+                className="text-xs text-accent hover:underline font-medium transition-all cursor-pointer"
+              >
+                View history →
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  router.push(`/topics/${topicId}/graph`)
+                }}
+                className="text-xs text-accent hover:underline font-medium transition-all cursor-pointer"
+              >
+                View graph →
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       <Button
