@@ -44,7 +44,7 @@ export default function TopicLibraryPage() {
       <AppShell>
         <div className="space-y-6">
           <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-[500px] w-full" />
+          <Skeleton className="h-[600px] w-full" />
         </div>
       </AppShell>
     )

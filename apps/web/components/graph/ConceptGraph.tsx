@@ -55,9 +55,29 @@ export const STATUS_LABELS: Record<string, string> = {
 }
 
 export const LIBRARY_COLORS: Record<number, string> = {
-  3: '#6366F1', // Core / High importance
-  2: '#818CF8', // Medium importance
-  1: '#A5B4FC', // Foundational
+  3: '#6366F1', // Core / High importance — existing accent, unchanged
+  2: '#2DD4BF', // Key concept — teal, clearly distinct hue
+  1: '#94A3B8', // Foundational — neutral slate, clearly muted/receding
+}
+
+function splitLabel(name: string): string[] {
+  if (name.length <= 14) return [name]
+  const mid = Math.floor(name.length / 2)
+  let bestSpace = -1
+  let minDiff = Infinity
+  for (let i = 0; i < name.length; i++) {
+    if (name[i] === ' ') {
+      const diff = Math.abs(i - mid)
+      if (diff < minDiff) {
+        minDiff = diff
+        bestSpace = i
+      }
+    }
+  }
+  if (bestSpace !== -1 && bestSpace > 1 && bestSpace < name.length - 2) {
+    return [name.slice(0, bestSpace), name.slice(bestSpace + 1)]
+  }
+  return [name.slice(0, Math.ceil(name.length / 2)), name.slice(Math.ceil(name.length / 2))]
 }
 
 export function ConceptGraph({ nodes, edges, mode = 'diagnostic' }: ConceptGraphProps) {
@@ -66,8 +86,8 @@ export function ConceptGraph({ nodes, edges, mode = 'diagnostic' }: ConceptGraph
   const [hoveredNode, setHoveredNode] = useState<NodeItem | null>(null)
   const [selectedNode, setSelectedNode] = useState<NodeItem | null>(null)
 
-  const width = 800
-  const height = 500
+  const width = 900
+  const height = 600
 
   useEffect(() => {
     if (!nodes || nodes.length === 0) return
@@ -84,29 +104,30 @@ export function ConceptGraph({ nodes, edges, mode = 'diagnostic' }: ConceptGraph
           .id((d: any) => d.id)
           .distance(100)
       )
-      .force('charge', d3.forceManyBody().strength(-300))
+      .force('charge', d3.forceManyBody().strength(-450))
       .force('center', d3.forceCenter(width / 2, height / 2))
       .force(
         'collision',
-        d3.forceCollide().radius((d: any) => 12 + (d.importance_weight || 2) * 4)
+        d3.forceCollide().radius((d: any) => 28 + (d.importance_weight || 2) * 5)
       )
 
     simulation.on('tick', () => {
       nodesCopy.forEach((n: any) => {
-        const r = 8 + (n.importance_weight || 2) * 4
-        n.x = Math.max(r + 15, Math.min(width - r - 15, n.x))
-        n.y = Math.max(r + 15, Math.min(height - r - 15, n.y))
+        const r = 10 + (n.importance_weight || 2) * 5
+        const labelPadding = 70
+        n.x = Math.max(r + labelPadding, Math.min(width - r - labelPadding, n.x))
+        n.y = Math.max(r + 30, Math.min(height - r - 30, n.y))
       })
 
+      const resolvedLinks = linksCopy
+        .filter((l: any) => l.source && l.target && l.source.x !== undefined && l.target.x !== undefined)
+        .map((l: any) => ({
+          source: { id: l.source.id, x: l.source.x, y: l.source.y },
+          target: { id: l.target.id, x: l.target.x, y: l.target.y },
+        }))
+
       setSimNodes([...nodesCopy])
-      setSimLinks(
-        linksCopy
-          .filter((l: any) => l.source && l.target && l.source.x !== undefined)
-          .map((l: any) => ({
-            source: { id: l.source.id, x: l.source.x, y: l.source.y },
-            target: { id: l.target.id, x: l.target.x, y: l.target.y },
-          }))
-      )
+      setSimLinks(resolvedLinks)
     })
 
     return () => {
@@ -117,7 +138,7 @@ export function ConceptGraph({ nodes, edges, mode = 'diagnostic' }: ConceptGraph
   const getNodeColor = (node: NodeItem) => {
     if (mode === 'library') {
       const weight = node.importance_weight || 2
-      return LIBRARY_COLORS[weight] || '#818CF8'
+      return LIBRARY_COLORS[weight] || '#2DD4BF'
     }
     return STATUS_COLORS[node.status || ''] || STATUS_COLORS.not_assessed
   }
@@ -151,7 +172,7 @@ export function ConceptGraph({ nodes, edges, mode = 'diagnostic' }: ConceptGraph
       <div className="w-full relative overflow-hidden rounded-lg bg-bg/50">
         <svg
           viewBox={`0 0 ${width} ${height}`}
-          className="w-full h-[500px] select-none"
+          className="w-full h-[600px] select-none"
         >
           <defs>
             <marker
@@ -187,7 +208,7 @@ export function ConceptGraph({ nodes, edges, mode = 'diagnostic' }: ConceptGraph
           {/* Nodes */}
           <g>
             {simNodes.map((node) => {
-              const radius = 8 + (node.importance_weight || 2) * 4
+              const radius = 10 + (node.importance_weight || 2) * 5
               const color = getNodeColor(node)
               const isHovered = hoveredNode?.id === node.id
               const isSelected = selectedNode?.id === node.id
@@ -214,13 +235,23 @@ export function ConceptGraph({ nodes, edges, mode = 'diagnostic' }: ConceptGraph
                     strokeWidth={isSelected ? 3.5 : isHovered ? 2.5 : 1.5}
                   />
                   <text
-                    y={radius + 14}
                     textAnchor="middle"
                     fill="#F1F1F5"
-                    fontSize="10 font-mono"
-                    className="pointer-events-none drop-shadow font-medium"
+                    fontSize="10"
+                    className="pointer-events-none drop-shadow font-medium font-mono select-none"
                   >
-                    {node.name}
+                    {(() => {
+                      const lines = splitLabel(node.name)
+                      if (lines.length > 1) {
+                        return (
+                          <>
+                            <tspan x="0" dy={radius + 12}>{lines[0]}</tspan>
+                            <tspan x="0" dy="11">{lines[1]}</tspan>
+                          </>
+                        )
+                      }
+                      return <tspan x="0" dy={radius + 14}>{lines[0]}</tspan>
+                    })()}
                   </text>
                 </g>
               )
