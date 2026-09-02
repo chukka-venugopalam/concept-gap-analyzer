@@ -58,38 +58,16 @@ export const TopicCard: React.FC<TopicCardProps> = ({
           </div>
         )}
 
-        <div className="mb-4 flex items-center flex-wrap gap-3">
+        <div className="mb-4">
           <button
             onClick={(e) => {
               e.stopPropagation()
-              router.push(`/topics/${topicId}/library`)
+              router.push(sessionCount > 0 ? `/topics/${topicId}/history` : `/session/${topicId}/intro`)
             }}
-            className="text-xs text-accent hover:underline font-medium transition-all cursor-pointer"
+            className="text-xs text-accent hover:underline font-medium transition-all cursor-pointer inline-flex items-center gap-1"
           >
-            Browse concepts →
+            <span>Open topic →</span>
           </button>
-          {sessionCount > 0 && (
-            <>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  router.push(`/topics/${topicId}/history`)
-                }}
-                className="text-xs text-accent hover:underline font-medium transition-all cursor-pointer"
-              >
-                View history →
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  router.push(`/topics/${topicId}/graph`)
-                }}
-                className="text-xs text-accent hover:underline font-medium transition-all cursor-pointer"
-              >
-                View graph →
-              </button>
-            </>
-          )}
         </div>
       </div>
 
