@@ -96,6 +96,32 @@ export function Sidebar() {
         </svg>
       ),
     },
+    {
+      name: 'Graphs',
+      href: '/graphs',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <circle cx="6" cy="6" r="2.5" strokeWidth="2" />
+          <circle cx="18" cy="6" r="2.5" strokeWidth="2" />
+          <circle cx="12" cy="18" r="2.5" strokeWidth="2" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.5 6h7M7.5 8.2l3 7.6M16.5 8.2l-3 7.6" />
+        </svg>
+      ),
+    },
+    {
+      name: 'Library',
+      href: '/library',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"
+          />
+        </svg>
+      ),
+    },
   ]
 
   const isLinkActive = (href: string) => {
