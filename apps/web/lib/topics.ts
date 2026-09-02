@@ -18,6 +18,21 @@ export const TOPICS = [
     id: 'graphs',
     name: 'Graphs',
     displayOrder: 4
+  },
+  {
+    id: 'dynamic_programming',
+    name: 'Dynamic Programming',
+    displayOrder: 5
+  },
+  {
+    id: 'heaps',
+    name: 'Heaps',
+    displayOrder: 6
+  },
+  {
+    id: 'tries',
+    name: 'Tries',
+    displayOrder: 7
   }
 ] as const
 
