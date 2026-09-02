@@ -169,8 +169,34 @@ export function Sidebar() {
           )}
         </div>
 
+        {/* Quick Command Palette Button */}
+        <div className="px-3 pt-3">
+          <button
+            onClick={() => {
+              const event = new KeyboardEvent('keydown', { key: 'k', metaKey: true })
+              document.dispatchEvent(event)
+            }}
+            className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg bg-surface-2 border border-border text-xs text-secondary hover:text-primary hover:border-border-subtle transition-colors ${
+              !isMobile && collapsed ? 'justify-center px-2' : ''
+            }`}
+            title="Search (⌘K)"
+          >
+            <div className="flex items-center gap-2">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              {(isMobile || !collapsed) && <span>Search...</span>}
+            </div>
+            {(isMobile || !collapsed) && (
+              <kbd className="text-[10px] font-mono bg-surface px-1.5 py-0.5 rounded border border-border text-muted">
+                ⌘K
+              </kbd>
+            )}
+          </button>
+        </div>
+
         {/* Nav links */}
-        <nav className="py-4 space-y-1">
+        <nav className="py-3 space-y-1">
           {navItems.map((item) => {
             const active = isLinkActive(item.href)
             return (

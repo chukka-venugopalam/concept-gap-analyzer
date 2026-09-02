@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { Sidebar } from './Sidebar'
+import { CommandPalette } from '@/components/command/CommandPalette'
 
 export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false)
@@ -20,6 +21,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
   return (
     <div className="min-h-screen bg-bg text-primary flex flex-col md:flex-row">
       <Sidebar />
+      <CommandPalette />
       <div
         className={`flex-1 flex flex-col transition-all duration-200 pt-[56px] md:pt-0 ${
           collapsed ? 'md:pl-[64px]' : 'md:pl-[240px]'
