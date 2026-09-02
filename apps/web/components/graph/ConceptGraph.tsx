@@ -21,6 +21,8 @@ export interface NodeItem {
   name: string
   importance_weight?: number
   status?: string
+  topic_id?: string
+  topic_name?: string
   definition?: string
   real_world_example?: string | null
   resources?: ResourceLink[]
@@ -30,12 +32,16 @@ export interface NodeItem {
 export interface EdgeItem {
   source: string
   target: string
+  type?: 'hard' | 'cross_topic' | 'prerequisite' | 'related'
+  isCrossTopic?: boolean
 }
 
 export interface ConceptGraphProps {
   nodes: NodeItem[]
   edges: EdgeItem[]
   mode?: 'diagnostic' | 'library'
+  height?: number
+  width?: number
 }
 
 export const STATUS_COLORS: Record<string, string> = {
@@ -44,6 +50,14 @@ export const STATUS_COLORS: Record<string, string> = {
   missing: '#E85555',
   misconception: '#C44FD4',
   not_assessed: '#4A4A6A',
+}
+
+export const STATUS_DIM_COLORS: Record<string, string> = {
+  known: 'rgba(29,184,135,0.18)',
+  weak: 'rgba(232,168,56,0.18)',
+  missing: 'rgba(232,85,85,0.18)',
+  misconception: 'rgba(196,79,212,0.18)',
+  not_assessed: 'rgba(74,74,106,0.15)',
 }
 
 export const STATUS_LABELS: Record<string, string> = {
@@ -55,9 +69,15 @@ export const STATUS_LABELS: Record<string, string> = {
 }
 
 export const LIBRARY_COLORS: Record<number, string> = {
-  3: '#6366F1', // Core / High importance — existing accent, unchanged
+  3: '#6B6BF0', // Core / High importance — accent color token
   2: '#2DD4BF', // Key concept — teal, clearly distinct hue
   1: '#94A3B8', // Foundational — neutral slate, clearly muted/receding
+}
+
+export const LIBRARY_DIM_COLORS: Record<number, string> = {
+  3: 'rgba(107,107,240,0.22)',
+  2: 'rgba(45,212,191,0.18)',
+  1: 'rgba(148,163,184,0.12)',
 }
 
 function splitLabel(name: string): string[] {
@@ -80,20 +100,28 @@ function splitLabel(name: string): string[] {
   return [name.slice(0, Math.ceil(name.length / 2)), name.slice(Math.ceil(name.length / 2))]
 }
 
-export function ConceptGraph({ nodes, edges, mode = 'diagnostic' }: ConceptGraphProps) {
+export function ConceptGraph({
+  nodes,
+  edges,
+  mode = 'diagnostic',
+  width = 900,
+  height = 600,
+}: ConceptGraphProps) {
   const [simNodes, setSimNodes] = useState<any[]>([])
   const [simLinks, setSimLinks] = useState<any[]>([])
   const [hoveredNode, setHoveredNode] = useState<NodeItem | null>(null)
   const [selectedNode, setSelectedNode] = useState<NodeItem | null>(null)
 
-  const width = 900
-  const height = 600
-
   useEffect(() => {
     if (!nodes || nodes.length === 0) return
 
     const nodesCopy = nodes.map((n) => ({ ...n }))
-    const linksCopy = edges.map((e) => ({ source: e.source, target: e.target }))
+    const linksCopy = edges.map((e) => ({
+      source: e.source,
+      target: e.target,
+      type: e.type || (e.isCrossTopic ? 'cross_topic' : 'hard'),
+      isCrossTopic: e.isCrossTopic || e.type === 'cross_topic',
+    }))
 
     const simulation = d3
       .forceSimulation(nodesCopy as any)
@@ -102,28 +130,36 @@ export function ConceptGraph({ nodes, edges, mode = 'diagnostic' }: ConceptGraph
         d3
           .forceLink(linksCopy as any)
           .id((d: any) => d.id)
-          .distance(100)
+          .distance(110)
       )
-      .force('charge', d3.forceManyBody().strength(-450))
+      .force('charge', d3.forceManyBody().strength(-480))
       .force('center', d3.forceCenter(width / 2, height / 2))
       .force(
         'collision',
-        d3.forceCollide().radius((d: any) => 28 + (d.importance_weight || 2) * 5)
+        d3.forceCollide().radius((d: any) => 30 + (d.importance_weight || 2) * 5)
       )
 
     simulation.on('tick', () => {
       nodesCopy.forEach((n: any) => {
         const r = 10 + (n.importance_weight || 2) * 5
-        const labelPadding = 70
+        const labelPadding = 75
         n.x = Math.max(r + labelPadding, Math.min(width - r - labelPadding, n.x))
-        n.y = Math.max(r + 30, Math.min(height - r - 30, n.y))
+        n.y = Math.max(r + 35, Math.min(height - r - 35, n.y))
       })
 
       const resolvedLinks = linksCopy
-        .filter((l: any) => l.source && l.target && l.source.x !== undefined && l.target.x !== undefined)
+        .filter(
+          (l: any) =>
+            l.source &&
+            l.target &&
+            l.source.x !== undefined &&
+            l.target.x !== undefined
+        )
         .map((l: any) => ({
           source: { id: l.source.id, x: l.source.x, y: l.source.y },
           target: { id: l.target.id, x: l.target.x, y: l.target.y },
+          type: l.type,
+          isCrossTopic: l.isCrossTopic,
         }))
 
       setSimNodes([...nodesCopy])
@@ -133,7 +169,7 @@ export function ConceptGraph({ nodes, edges, mode = 'diagnostic' }: ConceptGraph
     return () => {
       simulation.stop()
     }
-  }, [nodes, edges])
+  }, [nodes, edges, width, height])
 
   const getNodeColor = (node: NodeItem) => {
     if (mode === 'library') {
@@ -141,6 +177,14 @@ export function ConceptGraph({ nodes, edges, mode = 'diagnostic' }: ConceptGraph
       return LIBRARY_COLORS[weight] || '#2DD4BF'
     }
     return STATUS_COLORS[node.status || ''] || STATUS_COLORS.not_assessed
+  }
+
+  const getNodeDimColor = (node: NodeItem) => {
+    if (mode === 'library') {
+      const weight = node.importance_weight || 2
+      return LIBRARY_DIM_COLORS[weight] || 'rgba(45,212,191,0.18)'
+    }
+    return STATUS_DIM_COLORS[node.status || ''] || STATUS_DIM_COLORS.not_assessed
   }
 
   // Group practice problems by platform for selectedNode
@@ -175,10 +219,24 @@ export function ConceptGraph({ nodes, edges, mode = 'diagnostic' }: ConceptGraph
           className="w-full h-[600px] select-none"
         >
           <defs>
+            {/* Hard prerequisite arrowhead - solid accent */}
             <marker
-              id="arrowhead"
+              id="arrowhead-accent"
               viewBox="0 -5 10 10"
-              refX="20"
+              refX="22"
+              refY="0"
+              markerWidth="6"
+              markerHeight="6"
+              orient="auto"
+            >
+              <path d="M0,-5L10,0L0,5" fill="#6B6BF0" />
+            </marker>
+
+            {/* Cross-topic / related arrowhead - muted */}
+            <marker
+              id="arrowhead-muted"
+              viewBox="0 -5 10 10"
+              refX="22"
               refY="0"
               markerWidth="6"
               markerHeight="6"
@@ -186,32 +244,63 @@ export function ConceptGraph({ nodes, edges, mode = 'diagnostic' }: ConceptGraph
             >
               <path d="M0,-5L10,0L0,5" fill="#4A4A6A" />
             </marker>
+
+            {/* SVG Glow Filter definitions */}
+            <filter id="glow-accent" x="-50%" y="-50%" width="200%" height="200%">
+              <feDropShadow dx="0" dy="0" stdDeviation="6" floodColor="#6B6BF0" floodOpacity="0.45" />
+            </filter>
+            <filter id="glow-known" x="-50%" y="-50%" width="200%" height="200%">
+              <feDropShadow dx="0" dy="0" stdDeviation="6" floodColor="#1DB887" floodOpacity="0.45" />
+            </filter>
+            <filter id="glow-weak" x="-50%" y="-50%" width="200%" height="200%">
+              <feDropShadow dx="0" dy="0" stdDeviation="6" floodColor="#E8A838" floodOpacity="0.45" />
+            </filter>
+            <filter id="glow-missing" x="-50%" y="-50%" width="200%" height="200%">
+              <feDropShadow dx="0" dy="0" stdDeviation="6" floodColor="#E85555" floodOpacity="0.45" />
+            </filter>
+            <filter id="glow-misconception" x="-50%" y="-50%" width="200%" height="200%">
+              <feDropShadow dx="0" dy="0" stdDeviation="6" floodColor="#C44FD4" floodOpacity="0.45" />
+            </filter>
           </defs>
 
           {/* Edges */}
           <g>
-            {simLinks.map((link, idx) => (
-              <line
-                key={idx}
-                x1={link.source.x}
-                y1={link.source.y}
-                x2={link.target.x}
-                y2={link.target.y}
-                stroke="#4A4A6A"
-                strokeWidth="1.5"
-                strokeOpacity="0.6"
-                markerEnd="url(#arrowhead)"
-              />
-            ))}
+            {simLinks.map((link, idx) => {
+              const isCross = link.isCrossTopic || link.type === 'cross_topic'
+              return (
+                <line
+                  key={idx}
+                  x1={link.source.x}
+                  y1={link.source.y}
+                  x2={link.target.x}
+                  y2={link.target.y}
+                  stroke={isCross ? '#4A4A6A' : '#6B6BF0'}
+                  strokeWidth={isCross ? '1.5' : '1.75'}
+                  strokeOpacity={isCross ? 0.4 : 0.85}
+                  strokeDasharray={isCross ? '4,4' : undefined}
+                  markerEnd={isCross ? 'url(#arrowhead-muted)' : 'url(#arrowhead-accent)'}
+                />
+              )
+            })}
           </g>
 
           {/* Nodes */}
           <g>
             {simNodes.map((node) => {
-              const radius = 10 + (node.importance_weight || 2) * 5
+              const weight = node.importance_weight || 2
+              const radius = 10 + weight * 5
+              const auraRadius = radius + weight * 3
               const color = getNodeColor(node)
+              const dimColor = getNodeDimColor(node)
               const isHovered = hoveredNode?.id === node.id
               const isSelected = selectedNode?.id === node.id
+
+              let filterUrl: string | undefined = undefined
+              if (mode === 'diagnostic' && node.status && node.status !== 'not_assessed') {
+                filterUrl = `url(#glow-${node.status})`
+              } else if (mode === 'library' && weight >= 3) {
+                filterUrl = 'url(#glow-accent)'
+              }
 
               return (
                 <g
@@ -228,17 +317,31 @@ export function ConceptGraph({ nodes, edges, mode = 'diagnostic' }: ConceptGraph
                     }
                   }}
                 >
+                  {/* Outer Aura Glow Ring scaled by importance weight */}
+                  {(weight >= 2 || isHovered || isSelected) && (
+                    <circle
+                      r={auraRadius}
+                      fill={dimColor}
+                      className="transition-all duration-300 pointer-events-none"
+                    />
+                  )}
+
+                  {/* Core Node Circle with status/weight glow */}
                   <circle
                     r={radius}
                     fill={color}
-                    stroke={isSelected ? '#FFFFFF' : isHovered ? '#E2E8F0' : 'rgba(0,0,0,0.3)'}
+                    filter={filterUrl}
+                    stroke={isSelected ? '#FFFFFF' : isHovered ? '#F0F0F5' : 'rgba(0,0,0,0.3)'}
                     strokeWidth={isSelected ? 3.5 : isHovered ? 2.5 : 1.5}
                   />
+
+                  {/* Multi-line Label */}
                   <text
                     textAnchor="middle"
-                    fill="#F1F1F5"
-                    fontSize="10"
-                    className="pointer-events-none drop-shadow font-medium font-mono select-none"
+                    fill="#F0F0F5"
+                    fontSize={weight >= 3 ? '11' : '10'}
+                    fontWeight={weight >= 3 ? '600' : '500'}
+                    className="pointer-events-none drop-shadow font-mono select-none"
                   >
                     {(() => {
                       const lines = splitLabel(node.name)
