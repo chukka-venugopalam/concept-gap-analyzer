@@ -1,3 +1,4 @@
+import { toast } from 'sonner'
 import { createClient } from './supabase'
 
 const API_BASE =
@@ -25,9 +26,9 @@ async function request<T>(
   const supabase = createClient()
   const { data: { session }, error } = await supabase.auth.getSession()
 
-  console.log('[API DEBUG] Session:', session ? 'exists' : 'null')
-  console.log('[API DEBUG] Token:', session?.access_token ? session.access_token.substring(0, 20) + '...' : 'MISSING')
-  console.log('[API DEBUG] Error:', error)
+  if (error) {
+    console.error('[API AUTH] Session check warning:', error)
+  }
 
   const demoToken = typeof window !== 'undefined' ? localStorage.getItem('cip_demo_token') : null
   const accessToken = session?.access_token || demoToken || 'demo_token_dev'
@@ -48,22 +49,54 @@ async function request<T>(
     headers['Authorization'] = `Bearer ${accessToken}`
   }
 
-  const res = await fetch(url.toString(), {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  })
+  let res: Response
+  try {
+    res = await fetch(url.toString(), {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+    })
+  } catch (netErr: any) {
+    const userMessage = 'Something went wrong on our end — try again in a moment.'
+    if (typeof window !== 'undefined') {
+      toast.error(userMessage)
+    }
+    throw new APIError('network_error', userMessage, 0)
+  }
 
-  const json = await res.json()
+  let json: any = null
+  try {
+    json = await res.json()
+  } catch {
+    // Non-JSON response
+  }
+
   if (!res.ok) {
+    let userMessage = 'Something went wrong.'
+
+    if (res.status === 401) {
+      userMessage = 'Your session expired — please log back in.'
+    } else if (res.status >= 500) {
+      userMessage = 'Something went wrong on our end — try again in a moment.'
+    } else if (json?.error?.message && typeof json.error.message === 'string') {
+      userMessage = json.error.message
+    } else if (json?.detail && typeof json.detail === 'string') {
+      userMessage = json.detail
+    }
+
+    if (typeof window !== 'undefined') {
+      toast.error(userMessage)
+    }
+
     throw new APIError(
-      json.error?.code ?? 'unknown_error',
-      json.error?.message ?? 'An error occurred',
+      json?.error?.code ?? (res.status === 401 ? 'unauthorized' : 'api_error'),
+      userMessage,
       res.status,
-      json.error?.field
+      json?.error?.field
     )
   }
-  return json.data as T
+
+  return json?.data as T
 }
 
 export const api = {
