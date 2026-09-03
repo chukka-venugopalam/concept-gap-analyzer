@@ -191,6 +191,7 @@ export default function SessionRunPage() {
           <Button
             size="lg"
             className="w-full"
+            loading={loading}
             disabled={loading || !sessionId || wordCount < 50}
             onClick={handleStage1Submit}
           >
@@ -223,7 +224,8 @@ export default function SessionRunPage() {
           <Button
             size="lg"
             className="w-full"
-            disabled={!currentProbeResponse.trim()}
+            loading={loading}
+            disabled={loading || !currentProbeResponse.trim()}
             onClick={handleProbeNext}
           >
             {currentProbeIndex < probes.length - 1 ? 'Next Question →' : 'Final Question →'}
@@ -255,7 +257,8 @@ export default function SessionRunPage() {
           <Button
             size="lg"
             className="w-full"
-            disabled={stage3Text.trim().length < 20}
+            loading={loading}
+            disabled={loading || stage3Text.trim().length < 20}
             onClick={handleStage3Submit}
           >
             Show Me My Results →

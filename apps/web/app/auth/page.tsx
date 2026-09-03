@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
+import { Button } from '@/components/ui/Button'
 
 export default function AuthPage() {
   console.log('[AUTH ENV CHECK]', {
@@ -18,9 +19,11 @@ export default function AuthPage() {
   const [error, setError] = useState('')
   const [infoMessage, setInfoMessage] = useState('')
   const [loading, setLoading] = useState(false)
+  const [demoLoading, setDemoLoading] = useState(false)
 
   const handleDemoAuth = async () => {
     console.log('[AUTH] Demo Auth initiated')
+    setDemoLoading(true)
     document.cookie = 'cip_demo_auth=true; path=/; max-age=86400'
     localStorage.setItem('cip_demo_token', 'demo_token_dev')
 
@@ -39,6 +42,8 @@ export default function AuthPage() {
       })
     } catch (err) {
       console.error('[AUTH] Failed to sync demo user:', err)
+    } finally {
+      setDemoLoading(false)
     }
 
     router.push('/onboarding')
@@ -198,13 +203,14 @@ export default function AuthPage() {
             />
           </div>
 
-          <button
+          <Button
             onClick={handleEmailAuth}
-            disabled={loading}
-            className="w-full bg-accent text-white font-display font-semibold py-2.5 px-4 rounded-lg text-sm hover:opacity-90 transition-opacity disabled:opacity-50 cursor-pointer"
+            loading={loading}
+            disabled={loading || demoLoading}
+            className="w-full"
           >
-            {loading ? 'Processing...' : isSignUp ? 'Sign Up' : 'Sign In'}
-          </button>
+            {isSignUp ? 'Sign Up' : 'Sign In'}
+          </Button>
         </div>
 
         <div className="mt-6 text-center space-y-3">
@@ -220,12 +226,16 @@ export default function AuthPage() {
           </button>
 
           <div className="pt-2 border-t border-border">
-            <button
+            <Button
+              variant="secondary"
+              size="sm"
+              loading={demoLoading}
+              disabled={loading || demoLoading}
               onClick={handleDemoAuth}
-              className="w-full bg-surface-2 border border-accent/40 text-accent font-display text-xs font-semibold py-2 px-3 rounded-lg hover:bg-accent-dim transition-colors cursor-pointer"
+              className="w-full border-accent/40 text-accent font-display text-xs"
             >
               ⚡ Continue in Demo Mode (Local Test)
-            </button>
+            </Button>
           </div>
         </div>
       </div>
