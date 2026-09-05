@@ -6,7 +6,7 @@ import { AppShell } from '@/components/layout/AppShell'
 import { ScoreTrendChart } from '@/components/dashboard/ScoreTrendChart'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { usersAPI } from '@/lib/api/users'
-import { TOPICS } from '@/lib/topics'
+import { topicsAPI } from '@/lib/api/topics'
 import { formatDuration, getScoreColor } from '@/lib/utils'
 
 export default function TopicHistoryPage() {
@@ -14,8 +14,7 @@ export default function TopicHistoryPage() {
   const router = useRouter()
   const topicId = (params?.topicId as string) || ''
 
-  const topicObj = TOPICS.find((t) => t.id === topicId)
-
+  const [topicName, setTopicName] = useState<string>('')
   const [sessions, setSessions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -25,13 +24,25 @@ export default function TopicHistoryPage() {
       if (!topicId) return
       try {
         setLoading(true)
-        const result = await usersAPI.getSessions(20, topicId)
-        const sessionList = Array.isArray(result)
-          ? result
-          : Array.isArray(result?.sessions)
-          ? result.sessions
+        setError('')
+        const [result, allTopicsRes] = await Promise.all([
+          usersAPI.getSessions(20, topicId),
+          topicsAPI.getAll()
+        ])
+        const sessionData = result?.data || result
+        const sessionList = Array.isArray(sessionData)
+          ? sessionData
+          : Array.isArray(sessionData?.sessions)
+          ? sessionData.sessions
           : []
         setSessions(sessionList)
+
+        const topicsData = allTopicsRes?.data?.topics || allTopicsRes?.topics || allTopicsRes?.data || allTopicsRes || []
+        const current = Array.isArray(topicsData) ? topicsData.find((t: any) => t.id === topicId) : null
+        setTopicName(
+          current?.name ||
+          (sessionList.length > 0 && sessionList[0].topic_name ? sessionList[0].topic_name : topicId.replace(/_/g, ' '))
+        )
       } catch (err: any) {
         console.error('Failed loading session history:', err)
         setError(err.message || 'Failed loading session history')
@@ -42,13 +53,6 @@ export default function TopicHistoryPage() {
     }
     loadHistory()
   }, [topicId])
-
-  const topicName =
-    sessions.length > 0 && sessions[0].topic_name
-      ? sessions[0].topic_name
-      : topicObj
-      ? topicObj.name
-      : topicId
 
   if (loading) {
     return (
@@ -62,6 +66,8 @@ export default function TopicHistoryPage() {
     )
   }
 
+  const displayName = topicName || topicId.replace(/_/g, ' ')
+
   return (
     <AppShell>
       <div className="mb-6">
@@ -69,7 +75,7 @@ export default function TopicHistoryPage() {
           Session History & Score Trend
         </span>
         <h1 className="font-display font-bold text-2xl text-primary">
-          {topicName} History
+          {displayName} History
         </h1>
       </div>
 
@@ -101,7 +107,7 @@ export default function TopicHistoryPage() {
               >
                 <div>
                   <h4 className="font-display font-semibold text-sm text-primary">
-                    {s.topic_name} — Session #{s.session_number}
+                    {s.topic_name || displayName} — Session #{s.session_number}
                   </h4>
                   <span className="text-xs text-secondary">
                     {new Date(s.completed_at).toLocaleDateString()}

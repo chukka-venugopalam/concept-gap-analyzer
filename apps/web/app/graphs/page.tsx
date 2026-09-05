@@ -5,7 +5,6 @@ import { AppShell } from '@/components/layout/AppShell'
 import { ConceptGraph, LIBRARY_COLORS, NodeItem, EdgeItem } from '@/components/graph/ConceptGraph'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { topicsAPI } from '@/lib/api/topics'
-import { TOPICS } from '@/lib/topics'
 
 // Known cross-topic concept relationships
 const CROSS_TOPIC_EDGES: EdgeItem[] = [
@@ -20,7 +19,8 @@ const CROSS_TOPIC_EDGES: EdgeItem[] = [
 
 export default function GraphsPage() {
   const [activeTab, setActiveTab] = useState<'topic' | 'all'>('topic')
-  const [selectedTopicId, setSelectedTopicId] = useState<string>(TOPICS[0].id)
+  const [topics, setTopics] = useState<any[]>([])
+  const [selectedTopicId, setSelectedTopicId] = useState<string>('')
 
   const [topicNodes, setTopicNodes] = useState<NodeItem[]>([])
   const [topicEdges, setTopicEdges] = useState<EdgeItem[]>([])
@@ -33,9 +33,28 @@ export default function GraphsPage() {
 
   const [error, setError] = useState('')
 
+  // Load topics dynamically
+  useEffect(() => {
+    async function loadTopics() {
+      try {
+        const res = await topicsAPI.getAll()
+        const list = Array.isArray(res) ? res : res?.topics || res?.data?.topics || []
+        if (Array.isArray(list) && list.length > 0) {
+          setTopics(list)
+          setSelectedTopicId((prev) => prev || list[0].id)
+        }
+      } catch (err: any) {
+        console.error('Failed loading topics:', err)
+        setError(err.message || 'Failed loading topics')
+      }
+    }
+    loadTopics()
+  }, [])
+
   // Load single topic graph
   useEffect(() => {
     async function loadTopicData() {
+      if (!selectedTopicId) return
       try {
         setTopicLoading(true)
         setError('')
@@ -50,7 +69,7 @@ export default function GraphsPage() {
         setTopicLoading(false)
       }
     }
-    if (activeTab === 'topic') {
+    if (activeTab === 'topic' && selectedTopicId) {
       loadTopicData()
     }
   }, [selectedTopicId, activeTab])
@@ -62,8 +81,19 @@ export default function GraphsPage() {
       try {
         setAllLoading(true)
         setError('')
+
+        // Fetch all topics dynamically
+        const resTopics = await topicsAPI.getAll()
+        const topicList = Array.isArray(resTopics)
+          ? resTopics
+          : resTopics?.topics || resTopics?.data?.topics || []
+
+        if (!Array.isArray(topicList) || topicList.length === 0) {
+          return
+        }
+
         const responses = await Promise.all(
-          TOPICS.map(async (t) => {
+          topicList.map(async (t: any) => {
             try {
               const res = await topicsAPI.getLibrary(t.id)
               const data = res?.data || res
@@ -113,8 +143,6 @@ export default function GraphsPage() {
       loadAllData()
     }
   }, [activeTab, allLoaded])
-
-  const currentTopic = TOPICS.find((t) => t.id === selectedTopicId) || TOPICS[0]
 
   return (
     <AppShell>
@@ -168,7 +196,7 @@ export default function GraphsPage() {
         <div className="space-y-4">
           {/* Topic Picker */}
           <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-            {TOPICS.map((topic) => {
+            {topics.map((topic) => {
               const active = topic.id === selectedTopicId
               return (
                 <button
@@ -241,7 +269,7 @@ export default function GraphsPage() {
         <div className="space-y-4">
           <div className="p-3 bg-surface rounded-lg border border-border text-xs text-secondary flex items-center justify-between flex-wrap gap-2">
             <span>
-              Combined concept graph across all {TOPICS.length} topics ({allNodes.length} concepts, {allEdges.length} connections).
+              Combined concept graph across all {topics.length || 11} topics ({allNodes.length} concepts, {allEdges.length} connections).
             </span>
             <span className="font-mono text-muted text-[11px]">
               Tip: Click any node to open its study details and practice problems.

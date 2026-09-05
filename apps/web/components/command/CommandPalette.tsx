@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Command } from 'cmdk'
-import { TOPICS } from '@/lib/topics'
+import { topicsAPI } from '@/lib/api/topics'
 
 interface ConceptSearchItem {
   id: string
@@ -84,11 +84,94 @@ const ALL_CONCEPTS: ConceptSearchItem[] = [
   { id: 'trie_end_marker', name: 'End-of-Word Marker', topicId: 'tries', topicName: 'Tries' },
   { id: 'trie_memory_tradeoff', name: 'Memory Tradeoffs', topicId: 'tries', topicName: 'Tries' },
   { id: 'trie_applications', name: 'Prefix Matching and Autocomplete', topicId: 'tries', topicName: 'Tries' },
+
+  // Stacks & Queues
+  { id: 'sq_stack_basics', name: 'Stack (LIFO)', topicId: 'stacks_queues', topicName: 'Stacks & Queues' },
+  { id: 'sq_queue_basics', name: 'Queue (FIFO)', topicId: 'stacks_queues', topicName: 'Stacks & Queues' },
+  { id: 'sq_queue_via_stacks', name: 'Queue via Two Stacks', topicId: 'stacks_queues', topicName: 'Stacks & Queues' },
+  { id: 'sq_monotonic_stack', name: 'Monotonic Stack', topicId: 'stacks_queues', topicName: 'Stacks & Queues' },
+  { id: 'sq_monotonic_deque', name: 'Monotonic Deque', topicId: 'stacks_queues', topicName: 'Stacks & Queues' },
+  { id: 'sq_expression_parsing', name: 'Expression Parsing with Stacks', topicId: 'stacks_queues', topicName: 'Stacks & Queues' },
+  { id: 'sq_string_stack_processing', name: 'Stack-Based String Processing', topicId: 'stacks_queues', topicName: 'Stacks & Queues' },
+
+  // Bit & String Manipulation
+  { id: 'bit_operators', name: 'Bitwise Operators', topicId: 'bit_string_manipulation', topicName: 'Bit & String Manipulation' },
+  { id: 'bit_xor_properties', name: 'XOR Properties', topicId: 'bit_string_manipulation', topicName: 'Bit & String Manipulation' },
+  { id: 'bit_counting', name: 'Counting & Checking Set Bits', topicId: 'bit_string_manipulation', topicName: 'Bit & String Manipulation' },
+  { id: 'bit_masking_subsets', name: 'Bitmasking for Subsets', topicId: 'bit_string_manipulation', topicName: 'Bit & String Manipulation' },
+  { id: 'str_palindrome', name: 'Palindrome Checking', topicId: 'bit_string_manipulation', topicName: 'Bit & String Manipulation' },
+  { id: 'str_anagram', name: 'Anagram Detection', topicId: 'bit_string_manipulation', topicName: 'Bit & String Manipulation' },
+  { id: 'str_pattern_matching', name: 'Pattern Matching & KMP Basics', topicId: 'bit_string_manipulation', topicName: 'Bit & String Manipulation' },
+  { id: 'str_common_prefix', name: 'Longest Common Prefix / Substring', topicId: 'bit_string_manipulation', topicName: 'Bit & String Manipulation' },
+
+  // Patterns
+  { id: 'pat_merge_intervals', name: 'Merge Intervals', topicId: 'patterns', topicName: 'Patterns' },
+  { id: 'pat_cyclic_sort', name: 'Cyclic Sort', topicId: 'patterns', topicName: 'Patterns' },
+  { id: 'pat_two_heaps', name: 'Two Heaps', topicId: 'patterns', topicName: 'Patterns' },
+  { id: 'pat_subsets_backtracking', name: 'Subsets & Backtracking', topicId: 'patterns', topicName: 'Patterns' },
+  { id: 'pat_modified_binary_search', name: 'Modified Binary Search', topicId: 'patterns', topicName: 'Patterns' },
+  { id: 'pat_kway_merge', name: 'K-way Merge', topicId: 'patterns', topicName: 'Patterns' },
+
+  // Sorting Fundamentals
+  { id: 'sort_bubble', name: 'Bubble Sort', topicId: 'sorting_fundamentals', topicName: 'Sorting Fundamentals' },
+  { id: 'sort_insertion', name: 'Insertion Sort', topicId: 'sorting_fundamentals', topicName: 'Sorting Fundamentals' },
+  { id: 'sort_merge', name: 'Merge Sort', topicId: 'sorting_fundamentals', topicName: 'Sorting Fundamentals' },
+  { id: 'sort_quicksort', name: 'Quicksort', topicId: 'sorting_fundamentals', topicName: 'Sorting Fundamentals' },
+  { id: 'sort_heapsort', name: 'Heapsort', topicId: 'sorting_fundamentals', topicName: 'Sorting Fundamentals' },
+  { id: 'sort_complexity_analysis', name: 'Complexity Analysis & Stability', topicId: 'sorting_fundamentals', topicName: 'Sorting Fundamentals' },
 ]
 
 export function CommandPalette() {
   const [open, setOpen] = useState(false)
+  const [topics, setTopics] = useState<any[]>([])
+  const [concepts, setConcepts] = useState<ConceptSearchItem[]>(ALL_CONCEPTS)
   const router = useRouter()
+
+  useEffect(() => {
+    let isMounted = true
+    async function loadData() {
+      try {
+        const res = await topicsAPI.getAll()
+        const topicList = Array.isArray(res) ? res : res?.topics || res?.data?.topics || []
+        if (!Array.isArray(topicList) || topicList.length === 0) return
+
+        if (isMounted) {
+          setTopics(topicList)
+        }
+
+        const libraries = await Promise.all(
+          topicList.map(async (t: any) => {
+            try {
+              const lib = await topicsAPI.getLibrary(t.id)
+              const data = lib?.data || lib
+              const nodes: any[] = data?.nodes || []
+              return nodes.map((node: any) => ({
+                id: node.id,
+                name: node.name,
+                topicId: t.id,
+                topicName: t.name,
+              }))
+            } catch {
+              return []
+            }
+          })
+        )
+
+        if (isMounted) {
+          const fetchedConcepts = libraries.flat()
+          if (fetchedConcepts.length > 0) {
+            setConcepts(fetchedConcepts)
+          }
+        }
+      } catch (err) {
+        console.error('Failed loading command palette data:', err)
+      }
+    }
+    loadData()
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -145,7 +228,7 @@ export function CommandPalette() {
               />
             </svg>
             <Command.Input
-              placeholder="Search concepts, topics, or navigation (e.g. BST, Graphs, Library)..."
+              placeholder="Search concepts, topics, or navigation (e.g. Monotonic Stack, Stacks & Queues)..."
               className="w-full bg-transparent py-3.5 text-sm text-primary placeholder-muted outline-none"
               autoFocus
             />
@@ -228,39 +311,41 @@ export function CommandPalette() {
             </Command.Group>
 
             {/* Topics Group */}
-            <Command.Group
-              heading={
-                <span className="text-[10px] font-mono uppercase tracking-wider text-muted px-2 py-1 block">
-                  Topics
-                </span>
-              }
-            >
-              {TOPICS.map((topic) => (
-                <Command.Item
-                  key={topic.id}
-                  onSelect={() =>
-                    handleSelect(() => router.push(`/topics/${topic.id}/history`))
-                  }
-                  className="flex items-center justify-between px-3 py-2 text-xs rounded-lg text-secondary cursor-pointer transition-colors hover:bg-surface-2 hover:text-primary aria-selected:bg-accent/15 aria-selected:text-primary aria-selected:border-l-2 aria-selected:border-accent"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-known font-mono">#</span>
-                    <span className="font-medium text-primary">{topic.name}</span>
-                  </div>
-                  <span className="text-[10px] font-mono text-muted">Topic</span>
-                </Command.Item>
-              ))}
-            </Command.Group>
+            {topics.length > 0 && (
+              <Command.Group
+                heading={
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-muted px-2 py-1 block">
+                    Topics ({topics.length})
+                  </span>
+                }
+              >
+                {topics.map((topic) => (
+                  <Command.Item
+                    key={topic.id}
+                    onSelect={() =>
+                      handleSelect(() => router.push(`/topics/${topic.id}/history`))
+                    }
+                    className="flex items-center justify-between px-3 py-2 text-xs rounded-lg text-secondary cursor-pointer transition-colors hover:bg-surface-2 hover:text-primary aria-selected:bg-accent/15 aria-selected:text-primary aria-selected:border-l-2 aria-selected:border-accent"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-known font-mono">#</span>
+                      <span className="font-medium text-primary">{topic.name}</span>
+                    </div>
+                    <span className="text-[10px] font-mono text-muted">Topic</span>
+                  </Command.Item>
+                ))}
+              </Command.Group>
+            )}
 
             {/* Concepts Group */}
             <Command.Group
               heading={
                 <span className="text-[10px] font-mono uppercase tracking-wider text-muted px-2 py-1 block">
-                  Concepts ({ALL_CONCEPTS.length})
+                  Concepts ({concepts.length})
                 </span>
               }
             >
-              {ALL_CONCEPTS.map((concept) => (
+              {concepts.map((concept) => (
                 <Command.Item
                   key={concept.id}
                   value={`${concept.name} ${concept.topicName} ${concept.id}`}

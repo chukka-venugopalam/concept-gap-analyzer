@@ -5,30 +5,36 @@ import { useParams, useRouter } from 'next/navigation'
 import { SessionShell } from '@/components/layout/SessionShell'
 import { Button } from '@/components/ui/Button'
 import { usersAPI } from '@/lib/api/users'
-import { TOPICS } from '@/lib/topics'
+import { topicsAPI } from '@/lib/api/topics'
 
 export default function SessionIntroPage() {
   const params = useParams()
   const router = useRouter()
   const topicId = (params?.topicId as string) || 'arrays_hashing'
 
-  const topicObj = TOPICS.find((t) => t.id === topicId)
-  const topicName = topicObj ? topicObj.name : topicId
-
+  const [topicName, setTopicName] = useState<string>(topicId.replace(/_/g, ' '))
   const [lastSession, setLastSession] = useState<any>(null)
 
   useEffect(() => {
-    async function loadLastSession() {
+    async function loadData() {
       try {
-        const res = await usersAPI.getSessions(1, topicId)
-        if (res?.sessions?.length > 0) {
-          setLastSession(res.sessions[0])
+        const [sessRes, topicsRes] = await Promise.all([
+          usersAPI.getSessions(1, topicId),
+          topicsAPI.getAll()
+        ])
+        if (sessRes?.sessions?.length > 0) {
+          setLastSession(sessRes.sessions[0])
+        }
+        const topicsList = Array.isArray(topicsRes) ? topicsRes : topicsRes?.topics || topicsRes?.data?.topics || []
+        const current = Array.isArray(topicsList) ? topicsList.find((t: any) => t.id === topicId) : null
+        if (current?.name) {
+          setTopicName(current.name)
         }
       } catch {
         // ignore
       }
     }
-    loadLastSession()
+    loadData()
   }, [topicId])
 
   return (
@@ -39,15 +45,15 @@ export default function SessionIntroPage() {
         </p>
 
         <h1 className="font-display font-bold text-3xl md:text-4xl text-primary mb-6">
-          You're about to explain {topicName}
+          You&apos;re about to explain {topicName}
         </h1>
 
         <div className="text-secondary text-base space-y-4 mb-8 leading-relaxed">
           <p>
-            Explain this topic as if you're in a technical interview. There are no trick questions and no wrong starting points. We're mapping your understanding, not testing your vocabulary.
+            Explain this topic as if you&apos;re in a technical interview. There are no trick questions and no wrong starting points. We&apos;re mapping your understanding, not testing your vocabulary.
           </p>
           <p>
-            Try to cover: what it is, how it works, when you'd use it, and any properties or operations you remember.
+            Try to cover: what it is, how it works, when you&apos;d use it, and any properties or operations you remember.
           </p>
         </div>
 
@@ -63,7 +69,7 @@ export default function SessionIntroPage() {
           className="w-full font-display font-semibold"
           onClick={() => router.push(`/session/${topicId}/run`)}
         >
-          I'm Ready — Start Diagnostic
+          I&apos;m Ready — Start Diagnostic
         </Button>
       </div>
     </SessionShell>

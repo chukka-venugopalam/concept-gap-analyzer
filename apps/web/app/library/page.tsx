@@ -5,7 +5,6 @@ import { AppShell } from '@/components/layout/AppShell'
 import { Badge } from '@/components/ui/Badge'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { topicsAPI } from '@/lib/api/topics'
-import { TOPICS } from '@/lib/topics'
 
 interface PracticeProblem {
   platform: string
@@ -54,14 +53,33 @@ const IMPORTANCE_CONFIG: Record<
 }
 
 export default function LibraryPage() {
-  const [selectedTopicId, setSelectedTopicId] = useState<string>(TOPICS[0].id)
+  const [topics, setTopics] = useState<any[]>([])
+  const [selectedTopicId, setSelectedTopicId] = useState<string>('')
   const [concepts, setConcepts] = useState<ConceptItem[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  // Load topics dynamically
+  useEffect(() => {
+    async function loadTopics() {
+      try {
+        const res = await topicsAPI.getAll()
+        const list = Array.isArray(res) ? res : res?.topics || res?.data?.topics || []
+        if (Array.isArray(list) && list.length > 0) {
+          setTopics(list)
+          setSelectedTopicId((prev) => prev || list[0].id)
+        }
+      } catch (err: any) {
+        console.error('Failed loading topics:', err)
+      }
+    }
+    loadTopics()
+  }, [])
+
   useEffect(() => {
     async function loadLibrary() {
+      if (!selectedTopicId) return
       try {
         setLoading(true)
         setError('')
@@ -75,10 +93,12 @@ export default function LibraryPage() {
         setLoading(false)
       }
     }
-    loadLibrary()
+    if (selectedTopicId) {
+      loadLibrary()
+    }
   }, [selectedTopicId])
 
-  const currentTopic = TOPICS.find((t) => t.id === selectedTopicId) || TOPICS[0]
+  const currentTopic = topics.find((t) => t.id === selectedTopicId) || topics[0] || { id: selectedTopicId, name: selectedTopicId }
 
   const filteredConcepts = useMemo(() => {
     const q = searchQuery.trim().toLowerCase()
@@ -122,7 +142,7 @@ export default function LibraryPage() {
 
       {/* Topic Picker */}
       <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-6 scrollbar-none">
-        {TOPICS.map((topic) => {
+        {topics.map((topic) => {
           const active = topic.id === selectedTopicId
           return (
             <button

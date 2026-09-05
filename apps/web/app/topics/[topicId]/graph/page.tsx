@@ -6,15 +6,12 @@ import { AppShell } from '@/components/layout/AppShell'
 import { ConceptGraph, STATUS_COLORS, STATUS_LABELS } from '@/components/graph/ConceptGraph'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { topicsAPI } from '@/lib/api/topics'
-import { TOPICS } from '@/lib/topics'
 
 export default function TopicGraphPage() {
   const params = useParams()
   const topicId = (params?.topicId as string) || ''
 
-  const topicObj = TOPICS.find((t) => t.id === topicId)
-  const topicName = topicObj ? topicObj.name : topicId
-
+  const [topicName, setTopicName] = useState<string>('')
   const [nodes, setNodes] = useState<any[]>([])
   const [edges, setEdges] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -25,10 +22,18 @@ export default function TopicGraphPage() {
       if (!topicId) return
       try {
         setLoading(true)
-        const res = await topicsAPI.getGraph(topicId)
-        const graphData = res?.data || res
+        setError('')
+        const [graphRes, allTopicsRes] = await Promise.all([
+          topicsAPI.getGraph(topicId),
+          topicsAPI.getAll()
+        ])
+        const graphData = graphRes?.data || graphRes
         setNodes(graphData?.nodes || [])
         setEdges(graphData?.edges || [])
+
+        const topicsData = allTopicsRes?.data?.topics || allTopicsRes?.topics || allTopicsRes?.data || allTopicsRes || []
+        const current = Array.isArray(topicsData) ? topicsData.find((t: any) => t.id === topicId) : null
+        setTopicName(current?.name || topicId.replace(/_/g, ' '))
       } catch (err: any) {
         console.error('Failed loading concept graph:', err)
         setError(err.message || 'Failed loading concept graph')
@@ -50,6 +55,8 @@ export default function TopicGraphPage() {
     )
   }
 
+  const displayName = topicName || topicId.replace(/_/g, ' ')
+
   return (
     <AppShell>
       <div className="mb-6">
@@ -57,7 +64,7 @@ export default function TopicGraphPage() {
           Concept Dependency Map
         </span>
         <h1 className="font-display font-bold text-2xl text-primary">
-          {topicName} Dependency Graph
+          {displayName} Dependency Graph
         </h1>
       </div>
 

@@ -7,16 +7,27 @@ import { StageIndicator } from '@/components/session/StageIndicator'
 import { Textarea } from '@/components/ui/Textarea'
 import { Button } from '@/components/ui/Button'
 import { sessionsAPI } from '@/lib/api/sessions'
-import { TOPICS } from '@/lib/topics'
+import { topicsAPI } from '@/lib/api/topics'
 
 export default function SessionRunPage() {
   const params = useParams()
   const router = useRouter()
   const topicId = (params?.topicId as string) || 'arrays_hashing'
 
-  const topicObj = TOPICS.find((t) => t.id === topicId)
-  const topicName = topicObj ? topicObj.name : topicId
+  const [topicName, setTopicName] = useState<string>(topicId.replace(/_/g, ' '))
   const storageKey = `cip_active_session_${topicId}`
+
+  useEffect(() => {
+    async function loadTopicName() {
+      try {
+        const res = await topicsAPI.getAll()
+        const list = Array.isArray(res) ? res : res?.topics || res?.data?.topics || []
+        const found = Array.isArray(list) ? list.find((t: any) => t.id === topicId) : null
+        if (found?.name) setTopicName(found.name)
+      } catch {}
+    }
+    loadTopicName()
+  }, [topicId])
 
   const [stage, setStage] = useState<1 | 2 | 3 | 'loading'>(1)
   const [sessionId, setSessionId] = useState<string | null>(null)

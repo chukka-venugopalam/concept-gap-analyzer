@@ -6,15 +6,12 @@ import { AppShell } from '@/components/layout/AppShell'
 import { ConceptGraph, LIBRARY_COLORS } from '@/components/graph/ConceptGraph'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { topicsAPI } from '@/lib/api/topics'
-import { TOPICS } from '@/lib/topics'
 
 export default function TopicLibraryPage() {
   const params = useParams()
   const topicId = (params?.topicId as string) || ''
 
-  const topicObj = TOPICS.find((t) => t.id === topicId)
-  const topicName = topicObj ? topicObj.name : topicId
-
+  const [topicName, setTopicName] = useState<string>('')
   const [nodes, setNodes] = useState<any[]>([])
   const [edges, setEdges] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -25,10 +22,18 @@ export default function TopicLibraryPage() {
       if (!topicId) return
       try {
         setLoading(true)
-        const res = await topicsAPI.getLibrary(topicId)
+        setError('')
+        const [res, allTopicsRes] = await Promise.all([
+          topicsAPI.getLibrary(topicId),
+          topicsAPI.getAll()
+        ])
         const libraryData = res?.data || res
         setNodes(libraryData?.nodes || [])
         setEdges(libraryData?.edges || [])
+
+        const topicsData = allTopicsRes?.data?.topics || allTopicsRes?.topics || allTopicsRes?.data || allTopicsRes || []
+        const current = Array.isArray(topicsData) ? topicsData.find((t: any) => t.id === topicId) : null
+        setTopicName(current?.name || libraryData?.topic_name || topicId.replace(/_/g, ' '))
       } catch (err: any) {
         console.error('Failed loading concept library:', err)
         setError(err.message || 'Failed loading concept library')
@@ -50,6 +55,8 @@ export default function TopicLibraryPage() {
     )
   }
 
+  const displayName = topicName || topicId.replace(/_/g, ' ')
+
   return (
     <AppShell>
       <div className="mb-6">
@@ -57,10 +64,10 @@ export default function TopicLibraryPage() {
           Reference Library
         </span>
         <h1 className="font-display font-bold text-2xl text-primary">
-          {topicName} — Concept Library
+          {displayName} — Concept Library
         </h1>
         <p className="text-xs text-secondary mt-1">
-          Explore core concepts, definitions, study resources, and curated practice problems for {topicName}.
+          Explore core concepts, definitions, study resources, and curated practice problems for {displayName}.
         </p>
       </div>
 
