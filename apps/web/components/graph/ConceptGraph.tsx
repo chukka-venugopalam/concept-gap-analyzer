@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import * as d3 from 'd3'
+import { useTheme } from 'next-themes'
 import { Badge } from '@/components/ui/Badge'
 
 export interface PracticeProblem {
@@ -69,9 +70,9 @@ export const STATUS_LABELS: Record<string, string> = {
 }
 
 export const LIBRARY_COLORS: Record<number, string> = {
-  3: '#6B6BF0', // Core / High importance — accent color token
-  2: '#2DD4BF', // Key concept — teal, clearly distinct hue
-  1: '#94A3B8', // Foundational — neutral slate, clearly muted/receding
+  3: '#6B6BF0', // Core / High importance (fallback for dark)
+  2: '#2DD4BF', // Key concept
+  1: '#94A3B8', // Foundational
 }
 
 export const LIBRARY_DIM_COLORS: Record<number, string> = {
@@ -107,6 +108,42 @@ export function ConceptGraph({
   width = 900,
   height = 600,
 }: ConceptGraphProps) {
+  const { theme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const isLight = mounted && theme === 'light'
+
+  const accentColor = isLight ? '#C4183D' : '#6B6BF0'
+  const mutedColor = isLight ? '#9A9AAA' : '#4A4A6A'
+  const textColor = isLight ? '#1A1A1F' : '#F0F0F5'
+  const notAssessedColor = isLight ? '#9A9AAA' : '#4A4A6A'
+
+  const currentLibraryColors: Record<number, string> = {
+    3: accentColor,
+    2: '#2DD4BF',
+    1: '#94A3B8',
+  }
+
+  const currentLibraryDimColors: Record<number, string> = {
+    3: isLight ? 'rgba(196,24,61,0.15)' : 'rgba(107,107,240,0.22)',
+    2: 'rgba(45,212,191,0.18)',
+    1: 'rgba(148,163,184,0.12)',
+  }
+
+  const currentStatusColors: Record<string, string> = {
+    ...STATUS_COLORS,
+    not_assessed: notAssessedColor,
+  }
+
+  const currentStatusDimColors: Record<string, string> = {
+    ...STATUS_DIM_COLORS,
+    not_assessed: isLight ? 'rgba(154,154,170,0.15)' : 'rgba(74,74,106,0.15)',
+  }
+
   const [simNodes, setSimNodes] = useState<any[]>([])
   const [simLinks, setSimLinks] = useState<any[]>([])
   const [hoveredNode, setHoveredNode] = useState<NodeItem | null>(null)
@@ -174,17 +211,17 @@ export function ConceptGraph({
   const getNodeColor = (node: NodeItem) => {
     if (mode === 'library') {
       const weight = node.importance_weight || 2
-      return LIBRARY_COLORS[weight] || '#2DD4BF'
+      return currentLibraryColors[weight] || '#2DD4BF'
     }
-    return STATUS_COLORS[node.status || ''] || STATUS_COLORS.not_assessed
+    return currentStatusColors[node.status || ''] || currentStatusColors.not_assessed
   }
 
   const getNodeDimColor = (node: NodeItem) => {
     if (mode === 'library') {
       const weight = node.importance_weight || 2
-      return LIBRARY_DIM_COLORS[weight] || 'rgba(45,212,191,0.18)'
+      return currentLibraryDimColors[weight] || 'rgba(45,212,191,0.18)'
     }
-    return STATUS_DIM_COLORS[node.status || ''] || STATUS_DIM_COLORS.not_assessed
+    return currentStatusDimColors[node.status || ''] || currentStatusDimColors.not_assessed
   }
 
   // Group practice problems by platform for selectedNode
@@ -219,7 +256,7 @@ export function ConceptGraph({
           className="w-full h-[600px] select-none"
         >
           <defs>
-            {/* Hard prerequisite arrowhead - solid accent */}
+            {/* Hard prerequisite arrowhead - theme accent */}
             <marker
               id="arrowhead-accent"
               viewBox="0 -5 10 10"
@@ -229,7 +266,7 @@ export function ConceptGraph({
               markerHeight="6"
               orient="auto"
             >
-              <path d="M0,-5L10,0L0,5" fill="#6B6BF0" />
+              <path d="M0,-5L10,0L0,5" fill={accentColor} />
             </marker>
 
             {/* Cross-topic / related arrowhead - muted */}
@@ -242,24 +279,54 @@ export function ConceptGraph({
               markerHeight="6"
               orient="auto"
             >
-              <path d="M0,-5L10,0L0,5" fill="#4A4A6A" />
+              <path d="M0,-5L10,0L0,5" fill={mutedColor} />
             </marker>
 
-            {/* SVG Glow Filter definitions */}
+            {/* SVG Glow/Shadow Filter definitions - soft shadow in light mode, glow in dark mode */}
             <filter id="glow-accent" x="-50%" y="-50%" width="200%" height="200%">
-              <feDropShadow dx="0" dy="0" stdDeviation="6" floodColor="#6B6BF0" floodOpacity="0.45" />
+              <feDropShadow
+                dx="0"
+                dy={isLight ? 2 : 0}
+                stdDeviation={isLight ? 2.5 : 6}
+                floodColor={accentColor}
+                floodOpacity={isLight ? 0.25 : 0.45}
+              />
             </filter>
             <filter id="glow-known" x="-50%" y="-50%" width="200%" height="200%">
-              <feDropShadow dx="0" dy="0" stdDeviation="6" floodColor="#1DB887" floodOpacity="0.45" />
+              <feDropShadow
+                dx="0"
+                dy={isLight ? 2 : 0}
+                stdDeviation={isLight ? 2.5 : 6}
+                floodColor="#1DB887"
+                floodOpacity={isLight ? 0.25 : 0.45}
+              />
             </filter>
             <filter id="glow-weak" x="-50%" y="-50%" width="200%" height="200%">
-              <feDropShadow dx="0" dy="0" stdDeviation="6" floodColor="#E8A838" floodOpacity="0.45" />
+              <feDropShadow
+                dx="0"
+                dy={isLight ? 2 : 0}
+                stdDeviation={isLight ? 2.5 : 6}
+                floodColor="#E8A838"
+                floodOpacity={isLight ? 0.25 : 0.45}
+              />
             </filter>
             <filter id="glow-missing" x="-50%" y="-50%" width="200%" height="200%">
-              <feDropShadow dx="0" dy="0" stdDeviation="6" floodColor="#E85555" floodOpacity="0.45" />
+              <feDropShadow
+                dx="0"
+                dy={isLight ? 2 : 0}
+                stdDeviation={isLight ? 2.5 : 6}
+                floodColor="#E85555"
+                floodOpacity={isLight ? 0.25 : 0.45}
+              />
             </filter>
             <filter id="glow-misconception" x="-50%" y="-50%" width="200%" height="200%">
-              <feDropShadow dx="0" dy="0" stdDeviation="6" floodColor="#C44FD4" floodOpacity="0.45" />
+              <feDropShadow
+                dx="0"
+                dy={isLight ? 2 : 0}
+                stdDeviation={isLight ? 2.5 : 6}
+                floodColor="#C44FD4"
+                floodOpacity={isLight ? 0.25 : 0.45}
+              />
             </filter>
           </defs>
 
@@ -274,9 +341,9 @@ export function ConceptGraph({
                   y1={link.source.y}
                   x2={link.target.x}
                   y2={link.target.y}
-                  stroke={isCross ? '#4A4A6A' : '#6B6BF0'}
+                  stroke={isCross ? mutedColor : accentColor}
                   strokeWidth={isCross ? '1.5' : '1.75'}
-                  strokeOpacity={isCross ? 0.4 : 0.85}
+                  strokeOpacity={isCross ? (isLight ? 0.5 : 0.4) : (isLight ? 0.75 : 0.85)}
                   strokeDasharray={isCross ? '4,4' : undefined}
                   markerEnd={isCross ? 'url(#arrowhead-muted)' : 'url(#arrowhead-accent)'}
                 />
@@ -317,7 +384,7 @@ export function ConceptGraph({
                     }
                   }}
                 >
-                  {/* Outer Aura Glow Ring scaled by importance weight */}
+                  {/* Outer Aura Ring scaled by importance weight */}
                   {(weight >= 2 || isHovered || isSelected) && (
                     <circle
                       r={auraRadius}
@@ -326,22 +393,28 @@ export function ConceptGraph({
                     />
                   )}
 
-                  {/* Core Node Circle with status/weight glow */}
+                  {/* Core Node Circle with status/weight glow or shadow */}
                   <circle
                     r={radius}
                     fill={color}
                     filter={filterUrl}
-                    stroke={isSelected ? '#FFFFFF' : isHovered ? '#F0F0F5' : 'rgba(0,0,0,0.3)'}
+                    stroke={
+                      isSelected
+                        ? (isLight ? '#1A1A1F' : '#FFFFFF')
+                        : isHovered
+                        ? (isLight ? '#4A4A6A' : '#F0F0F5')
+                        : (isLight ? 'rgba(0,0,0,0.1)' : 'rgba(0,0,0,0.3)')
+                    }
                     strokeWidth={isSelected ? 3.5 : isHovered ? 2.5 : 1.5}
                   />
 
                   {/* Multi-line Label */}
                   <text
                     textAnchor="middle"
-                    fill="#F0F0F5"
+                    fill={textColor}
                     fontSize={weight >= 3 ? '11' : '10'}
                     fontWeight={weight >= 3 ? '600' : '500'}
-                    className="pointer-events-none drop-shadow font-mono select-none"
+                    className={`pointer-events-none font-mono select-none ${isLight ? '' : 'drop-shadow'}`}
                   >
                     {(() => {
                       const lines = splitLabel(node.name)
@@ -372,7 +445,7 @@ export function ConceptGraph({
                 className="w-2.5 h-2.5 rounded-full inline-block"
                 style={{
                   backgroundColor:
-                    STATUS_COLORS[hoveredNode.status || ''] || STATUS_COLORS.not_assessed,
+                    currentStatusColors[hoveredNode.status || ''] || currentStatusColors.not_assessed,
                 }}
               />
               <span className="font-bold text-primary">{hoveredNode.name}</span>
