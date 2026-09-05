@@ -71,14 +71,14 @@ export const STATUS_LABELS: Record<string, string> = {
 
 export const LIBRARY_COLORS: Record<number, string> = {
   3: '#6B6BF0', // Core / High importance (fallback for dark)
-  2: '#2DD4BF', // Key concept
-  1: '#94A3B8', // Foundational
+  2: 'var(--tier-key)', // Key concept
+  1: 'var(--tier-foundational)', // Foundational
 }
 
 export const LIBRARY_DIM_COLORS: Record<number, string> = {
   3: 'rgba(107,107,240,0.22)',
-  2: 'rgba(45,212,191,0.18)',
-  1: 'rgba(148,163,184,0.12)',
+  2: 'var(--tier-key-dim)',
+  1: 'var(--tier-foundational-dim)',
 }
 
 function splitLabel(name: string): string[] {
@@ -124,14 +124,14 @@ export function ConceptGraph({
 
   const currentLibraryColors: Record<number, string> = {
     3: accentColor,
-    2: '#2DD4BF',
-    1: '#94A3B8',
+    2: 'var(--tier-key)',
+    1: 'var(--tier-foundational)',
   }
 
   const currentLibraryDimColors: Record<number, string> = {
     3: isLight ? 'rgba(196,24,61,0.15)' : 'rgba(107,107,240,0.22)',
-    2: 'rgba(45,212,191,0.18)',
-    1: 'rgba(148,163,184,0.12)',
+    2: 'var(--tier-key-dim)',
+    1: 'var(--tier-foundational-dim)',
   }
 
   const currentStatusColors: Record<string, string> = {
@@ -211,7 +211,7 @@ export function ConceptGraph({
   const getNodeColor = (node: NodeItem) => {
     if (mode === 'library') {
       const weight = node.importance_weight || 2
-      return currentLibraryColors[weight] || '#2DD4BF'
+      return currentLibraryColors[weight] || 'var(--tier-key)'
     }
     return currentStatusColors[node.status || ''] || currentStatusColors.not_assessed
   }
@@ -219,7 +219,7 @@ export function ConceptGraph({
   const getNodeDimColor = (node: NodeItem) => {
     if (mode === 'library') {
       const weight = node.importance_weight || 2
-      return currentLibraryDimColors[weight] || 'rgba(45,212,191,0.18)'
+      return currentLibraryDimColors[weight] || 'var(--tier-key-dim)'
     }
     return currentStatusDimColors[node.status || ''] || currentStatusDimColors.not_assessed
   }

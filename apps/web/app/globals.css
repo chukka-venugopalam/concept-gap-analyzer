@@ -23,6 +23,10 @@
   --missing-dim: rgba(232, 85, 85, 0.08);
   --misconception: #C44FD4;
   --misconception-dim: rgba(196, 79, 212, 0.08);
+  --tier-key: #2DD4BF;
+  --tier-key-dim: rgba(45, 212, 191, 0.18);
+  --tier-foundational: #94A3B8;
+  --tier-foundational-dim: rgba(148, 163, 184, 0.12);
   --shadow-accent: 0 0 24px rgba(107, 107, 240, 0.15);
 }
 
@@ -45,6 +49,10 @@
   --missing-dim: rgba(232, 85, 85, 0.08);
   --misconception: #C44FD4;
   --misconception-dim: rgba(196, 79, 212, 0.08);
+  --tier-key: #2DD4BF;
+  --tier-key-dim: rgba(45, 212, 191, 0.18);
+  --tier-foundational: #94A3B8;
+  --tier-foundational-dim: rgba(148, 163, 184, 0.12);
   --shadow-accent: 0 4px 20px rgba(196, 24, 61, 0.12);
 }
 

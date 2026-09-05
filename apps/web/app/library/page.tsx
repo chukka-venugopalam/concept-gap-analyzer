@@ -30,7 +30,7 @@ interface ConceptItem {
 
 const IMPORTANCE_CONFIG: Record<
   number,
-  { label: string; borderClass: string; bgClass: string; textClass: string }
+  { label: string; borderClass?: string; bgClass?: string; textClass?: string; borderColor?: string; color?: string }
 > = {
   3: {
     label: 'Core / High Importance',
@@ -40,15 +40,13 @@ const IMPORTANCE_CONFIG: Record<
   },
   2: {
     label: 'Key Concept',
-    borderClass: 'border-l-[#2DD4BF]',
-    bgClass: 'bg-[#2DD4BF]/10',
-    textClass: 'text-[#2DD4BF]',
+    borderColor: 'var(--tier-key)',
+    color: 'var(--tier-key)',
   },
   1: {
     label: 'Foundational',
-    borderClass: 'border-l-[#94A3B8]',
-    bgClass: 'bg-[#94A3B8]/10',
-    textClass: 'text-[#94A3B8]',
+    borderColor: 'var(--tier-foundational)',
+    color: 'var(--tier-foundational)',
   },
 }
 
@@ -249,7 +247,8 @@ export default function LibraryPage() {
             return (
               <div
                 key={concept.id}
-                className={`bg-surface rounded-xl p-5 md:p-6 border border-border border-l-4 ${config.borderClass} transition-all hover:border-border-subtle shadow-sm`}
+                className={`bg-surface rounded-xl p-5 md:p-6 border border-border border-l-4 ${config.borderClass ?? ''} transition-all hover:border-border-subtle shadow-sm`}
+                style={config.borderColor ? { borderLeftColor: config.borderColor } : undefined}
               >
                 {/* Header: Name + Importance Badge */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2.5">
@@ -257,7 +256,8 @@ export default function LibraryPage() {
                     {concept.name}
                   </h3>
                   <span
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium shrink-0 self-start sm:self-center ${config.bgClass} ${config.textClass} border border-current/20`}
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium shrink-0 self-start sm:self-center ${config.bgClass ?? ''} ${config.textClass ?? ''} border border-current/20`}
+                    style={config.color ? { color: config.color, backgroundColor: `color-mix(in srgb, ${config.color} 10%, transparent)` } : undefined}
                   >
                     {config.label}
                   </span>
