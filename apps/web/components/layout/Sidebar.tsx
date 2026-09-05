@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { AnimatePresence, motion } from 'framer-motion'
 import { createClient } from '@/lib/supabase'
 import { usersAPI } from '@/lib/api/users'
+import { ThemeToggle } from '@/components/theme/ThemeToggle'
 
 export function Sidebar() {
   const pathname = usePathname()
@@ -220,11 +221,13 @@ export function Sidebar() {
       </div>
 
       {/* Bottom section: User Profile / Sign Out */}
-      <div className="p-4 border-t border-border relative">
+      <div className="p-3 border-t border-border space-y-2 relative">
+        <ThemeToggle collapsed={!isMobile && collapsed} />
+
         <div className="flex items-center justify-between">
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-3 w-full text-left hover:opacity-80 transition-opacity"
+            className="flex items-center gap-3 w-full text-left hover:opacity-80 transition-opacity p-1 rounded-lg"
           >
             <div className="w-8 h-8 rounded-full bg-accent/20 border border-accent/40 text-accent font-display font-bold text-xs flex items-center justify-center shrink-0">
               {avatarLetter}
