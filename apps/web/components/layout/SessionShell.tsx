@@ -18,13 +18,12 @@ export const SessionShell: React.FC<SessionShellProps> = ({
   return (
     <div className="min-h-screen bg-bg text-primary flex flex-col">
       <Toaster
-        theme="dark"
         position="top-right"
         toastOptions={{
           style: {
-            background: '#13131A',
-            border: '1px solid #2A2A3D',
-            color: '#F0F0F5',
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            color: 'var(--primary)',
             fontFamily: 'Inter, sans-serif',
             fontSize: '13px',
           },

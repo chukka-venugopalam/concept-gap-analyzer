@@ -14,7 +14,7 @@ interface ProgressBarProps {
 
 export const ProgressBar: React.FC<ProgressBarProps> = ({
   value,
-  color = '#6B6BF0',
+  color = 'var(--accent)',
   label,
   showPercent = true,
   className

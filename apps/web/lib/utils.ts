@@ -11,9 +11,9 @@ export function formatDelta(delta: number | null) {
 }
 
 export function getScoreColor(score: number): string {
-  if (score >= 80) return '#1DB887'
-  if (score >= 60) return '#E8A838'
-  return '#6B6BF0'
+  if (score >= 80) return 'var(--known)'
+  if (score >= 60) return 'var(--weak)'
+  return 'var(--accent)'
 }
 
 export function formatDuration(seconds: number): string {

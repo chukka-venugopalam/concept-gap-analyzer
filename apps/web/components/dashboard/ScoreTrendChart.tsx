@@ -48,6 +48,7 @@ export function ScoreTrendChart({ sessions }: ScoreTrendChartProps) {
           strokeWidth="3"
           strokeLinecap="round"
           strokeLinejoin="round"
+          style={{ stroke: strokeColor }}
         />
         {points.map((p, idx) => (
           <circle
@@ -56,6 +57,7 @@ export function ScoreTrendChart({ sessions }: ScoreTrendChartProps) {
             cy={p.y}
             r="4"
             fill={strokeColor}
+            style={{ fill: strokeColor }}
             className="transition-all"
           >
             <title>{`Session ${idx + 1}: ${p.score}/100`}</title>

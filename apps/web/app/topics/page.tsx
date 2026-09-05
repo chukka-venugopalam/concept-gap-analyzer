@@ -26,9 +26,9 @@ export default function TopicsPage() {
   }, [])
 
   const getStatusColor = (status: string) => {
-    if (status === 'strong') return '#1DB887'
-    if (status === 'in_progress') return '#E8A838'
-    return '#7A7A9A'
+    if (status === 'strong') return 'var(--known)'
+    if (status === 'in_progress') return 'var(--weak)'
+    return 'var(--secondary)'
   }
 
   const getStatusLabel = (status: string) => {
