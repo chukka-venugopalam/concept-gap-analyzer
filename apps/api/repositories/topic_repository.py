@@ -26,6 +26,7 @@ class TopicRepository(BaseRepository):
             SELECT
               t.id AS topic_id,
               t.name AS topic_name,
+              t.description AS topic_description,
               t.concept_count,
               s.score_overall AS last_score,
               s.completed_at AS last_session_at,
