@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from api.v1 import auth, users, topics, sessions
+from api.v1 import auth, users, topics, sessions, interview_questions
 
 router = APIRouter(prefix="/api/v1")
 
@@ -15,4 +15,9 @@ router.include_router(
 router.include_router(
     sessions.router, prefix="/session",
     tags=["sessions"]
+)
+router.include_router(
+    interview_questions.router,
+    prefix="/interview-questions",
+    tags=["interview_questions"]
 )
