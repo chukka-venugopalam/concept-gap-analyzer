@@ -434,6 +434,102 @@ export function ConceptGraph({
             })}
           </g>
         </svg>
+
+        {/* Persistent Comprehension Legend */}
+        <div className="absolute bottom-3 left-3 z-10 bg-surface/95 backdrop-blur-md p-3 rounded-lg border border-border shadow-lg text-[11px] font-mono max-w-[280px] sm:max-w-xs space-y-2 pointer-events-auto select-none">
+          <div className="flex items-center justify-between pb-1 border-b border-border/60">
+            <span className="font-semibold text-primary uppercase tracking-wider text-[10px]">
+              Graph Legend
+            </span>
+            <span className="text-[10px] text-muted">
+              {mode === 'diagnostic' ? 'Diagnostic' : 'Library'}
+            </span>
+          </div>
+
+          {/* Node Color Explanation */}
+          <div>
+            <span className="text-[10px] text-muted block mb-1">
+              Node Color ({mode === 'diagnostic' ? 'Diagnostic Status' : 'Importance Tier'})
+            </span>
+            {mode === 'diagnostic' ? (
+              <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-known shrink-0" />
+                  <span className="text-secondary truncate">Understood</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-weak shrink-0" />
+                  <span className="text-secondary truncate">Needs Depth</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-missing shrink-0" />
+                  <span className="text-secondary truncate">Not Covered</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-misconception shrink-0" />
+                  <span className="text-secondary truncate">Misconception</span>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-accent shrink-0" />
+                  <span className="text-secondary">Core / High Importance</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: 'var(--tier-key)' }} />
+                  <span className="text-secondary">Key Concept</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: 'var(--tier-foundational)' }} />
+                  <span className="text-secondary">Foundational</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Node Size Explanation */}
+          <div className="pt-1 border-t border-border/40">
+            <span className="text-[10px] text-muted block mb-1">Node Size (Importance)</span>
+            <div className="flex items-center gap-2.5 text-secondary">
+              <div className="flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-secondary shrink-0" />
+                <span>Base</span>
+              </div>
+              <span>→</span>
+              <div className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-secondary shrink-0" />
+                <span>Key</span>
+              </div>
+              <span>→</span>
+              <div className="flex items-center gap-1">
+                <span className="w-3.5 h-3.5 rounded-full bg-secondary shrink-0" />
+                <span>Core</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Edge Styles Explanation */}
+          <div className="pt-1 border-t border-border/40">
+            <span className="text-[10px] text-muted block mb-1">Edge Connections</span>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-secondary">
+                <svg width="22" height="8" className="shrink-0">
+                  <line x1="0" y1="4" x2="16" y2="4" stroke="currentColor" strokeWidth="2" className="text-accent" />
+                  <polygon points="16,1 22,4 16,7" fill="currentColor" className="text-accent" />
+                </svg>
+                <span>Solid = Prerequisite</span>
+              </div>
+              <div className="flex items-center gap-2 text-secondary">
+                <svg width="22" height="8" className="shrink-0">
+                  <line x1="0" y1="4" x2="16" y2="4" stroke="currentColor" strokeWidth="1.5" strokeDasharray="3,2" className="text-secondary" />
+                  <polygon points="16,1 22,4 16,7" fill="currentColor" className="text-secondary" />
+                </svg>
+                <span>Dashed = Related / Cross-Topic</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Mode-specific Footer / Legend / Inspector */}
