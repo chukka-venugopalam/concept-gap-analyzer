@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import * as d3 from 'd3'
+import * as d3dag from 'd3-dag'
 import { useTheme } from 'next-themes'
 import { Badge } from '@/components/ui/Badge'
 
@@ -43,6 +44,7 @@ export interface ConceptGraphProps {
   mode?: 'diagnostic' | 'library'
   height?: number
   width?: number
+  layout?: 'hierarchical' | 'force'
 }
 
 export const STATUS_COLORS: Record<string, string> = {
@@ -107,6 +109,7 @@ export function ConceptGraph({
   mode = 'diagnostic',
   width = 900,
   height = 600,
+  layout = 'hierarchical',
 }: ConceptGraphProps) {
   const { theme } = useTheme()
   const [mounted, setMounted] = useState(false)
@@ -148,65 +151,167 @@ export function ConceptGraph({
   const [simLinks, setSimLinks] = useState<any[]>([])
   const [hoveredNode, setHoveredNode] = useState<NodeItem | null>(null)
   const [selectedNode, setSelectedNode] = useState<NodeItem | null>(null)
+  const [viewBoxSize, setViewBoxSize] = useState<{ width: number; height: number }>({ width, height })
 
   useEffect(() => {
-    if (!nodes || nodes.length === 0) return
+    if (!nodes || nodes.length === 0) {
+      setSimNodes([])
+      setSimLinks([])
+      return
+    }
 
-    const nodesCopy = nodes.map((n) => ({ ...n }))
-    const linksCopy = edges.map((e) => ({
-      source: e.source,
-      target: e.target,
-      type: e.type || (e.isCrossTopic ? 'cross_topic' : 'hard'),
-      isCrossTopic: e.isCrossTopic || e.type === 'cross_topic',
-    }))
+    if (layout === 'force') {
+      const nodesCopy = nodes.map((n) => ({ ...n }))
+      const linksCopy = edges.map((e) => ({
+        source: e.source,
+        target: e.target,
+        type: e.type || (e.isCrossTopic ? 'cross_topic' : 'hard'),
+        isCrossTopic: e.isCrossTopic || e.type === 'cross_topic',
+      }))
 
-    const simulation = d3
-      .forceSimulation(nodesCopy as any)
-      .force(
-        'link',
-        d3
-          .forceLink(linksCopy as any)
-          .id((d: any) => d.id)
-          .distance(110)
-      )
-      .force('charge', d3.forceManyBody().strength(-480))
-      .force('center', d3.forceCenter(width / 2, height / 2))
-      .force(
-        'collision',
-        d3.forceCollide().radius((d: any) => 30 + (d.importance_weight || 2) * 5)
-      )
+      const simulation = d3
+        .forceSimulation(nodesCopy as any)
+        .force(
+          'link',
+          d3
+            .forceLink(linksCopy as any)
+            .id((d: any) => d.id)
+            .distance(110)
+        )
+        .force('charge', d3.forceManyBody().strength(-480))
+        .force('center', d3.forceCenter(width / 2, height / 2))
+        .force(
+          'collision',
+          d3.forceCollide().radius((d: any) => 30 + (d.importance_weight || 2) * 5)
+        )
 
-    simulation.on('tick', () => {
-      nodesCopy.forEach((n: any) => {
-        const r = 10 + (n.importance_weight || 2) * 5
-        const labelPadding = 75
-        n.x = Math.max(r + labelPadding, Math.min(width - r - labelPadding, n.x))
-        n.y = Math.max(r + 35, Math.min(height - r - 35, n.y))
+      simulation.on('tick', () => {
+        nodesCopy.forEach((n: any) => {
+          const r = 10 + (n.importance_weight || 2) * 5
+          const labelPadding = 75
+          n.x = Math.max(r + labelPadding, Math.min(width - r - labelPadding, n.x))
+          n.y = Math.max(r + 35, Math.min(height - r - 35, n.y))
+        })
+
+        const resolvedLinks = linksCopy
+          .filter(
+            (l: any) =>
+              l.source &&
+              l.target &&
+              l.source.x !== undefined &&
+              l.target.x !== undefined
+          )
+          .map((l: any) => ({
+            source: { id: l.source.id, x: l.source.x, y: l.source.y },
+            target: { id: l.target.id, x: l.target.x, y: l.target.y },
+            type: l.type,
+            isCrossTopic: l.isCrossTopic,
+          }))
+
+        setSimNodes([...nodesCopy])
+        setSimLinks(resolvedLinks)
       })
 
-      const resolvedLinks = linksCopy
-        .filter(
-          (l: any) =>
-            l.source &&
-            l.target &&
-            l.source.x !== undefined &&
-            l.target.x !== undefined
-        )
-        .map((l: any) => ({
-          source: { id: l.source.id, x: l.source.x, y: l.source.y },
-          target: { id: l.target.id, x: l.target.x, y: l.target.y },
-          type: l.type,
-          isCrossTopic: l.isCrossTopic,
-        }))
-
-      setSimNodes([...nodesCopy])
-      setSimLinks(resolvedLinks)
-    })
-
-    return () => {
-      simulation.stop()
+      setViewBoxSize({ width, height })
+      return () => {
+        simulation.stop()
+      }
     }
-  }, [nodes, edges, width, height])
+
+    // Hierarchical Layered DAG Layout (Sugiyama layout via d3-dag)
+    try {
+      const nodesById = new Map(nodes.map((n) => [n.id, n]))
+
+      // In the database & API, e.source is concept_id (dependent), e.target is prerequisite_id (prerequisite).
+      // A concept's parents in the DAG are its prerequisites.
+      const stratData = nodes.map((n) => ({
+        id: n.id,
+        parentIds: edges
+          .filter((e) => e.source === n.id && nodesById.has(e.target))
+          .map((e) => e.target),
+      }))
+
+      const strat = d3dag.graphStratify()
+      const dag = strat(stratData)
+
+      // Spacing: horizontal distance between sibling nodes, vertical distance between layers
+      const layoutDag = d3dag
+        .sugiyama()
+        .layering(d3dag.layeringLongestPath())
+        .coord(d3dag.coordCenter())
+        .nodeSize([150, 115])
+
+      const { width: dagWidth, height: dagHeight } = layoutDag(dag)
+
+      const svgW = Math.max(width, Math.round(dagWidth + 120))
+      const svgH = Math.max(height, Math.round(dagHeight + 140))
+      setViewBoxSize({ width: svgW, height: svgH })
+
+      const offsetX = (svgW - dagWidth) / 2
+      const offsetY = Math.max(60, (svgH - dagHeight) / 2)
+
+      const posMap = new Map<string, { x: number; y: number }>()
+      const positionedNodes: any[] = []
+
+      for (const dNode of dag.nodes()) {
+        const orig = nodesById.get(dNode.data.id) || { id: dNode.data.id, name: dNode.data.id }
+        const x = dNode.x + offsetX
+        const y = dNode.y + offsetY
+        posMap.set(dNode.data.id, { x, y })
+        positionedNodes.push({
+          ...orig,
+          x,
+          y,
+        })
+      }
+
+      // Arrow points from prerequisite (top / e.target) down to dependent (bottom / e.source)
+      const resolvedLinks = edges
+        .filter((e) => posMap.has(e.source) && posMap.has(e.target))
+        .map((e) => {
+          const prereqPos = posMap.get(e.target)!
+          const dependentPos = posMap.get(e.source)!
+          return {
+            source: { id: e.target, x: prereqPos.x, y: prereqPos.y },
+            target: { id: e.source, x: dependentPos.x, y: dependentPos.y },
+            type: e.type || (e.isCrossTopic ? 'cross_topic' : 'hard'),
+            isCrossTopic: e.isCrossTopic || e.type === 'cross_topic',
+          }
+        })
+
+      setSimNodes(positionedNodes)
+      setSimLinks(resolvedLinks)
+    } catch (dagErr) {
+      console.warn('d3-dag layout fallback to force layout:', dagErr)
+      const nodesCopy = nodes.map((n) => ({ ...n }))
+      const linksCopy = edges.map((e) => ({
+        source: e.source,
+        target: e.target,
+        type: e.type || (e.isCrossTopic ? 'cross_topic' : 'hard'),
+        isCrossTopic: e.isCrossTopic || e.type === 'cross_topic',
+      }))
+      const sim = d3
+        .forceSimulation(nodesCopy as any)
+        .force('link', d3.forceLink(linksCopy as any).id((d: any) => d.id).distance(110))
+        .force('charge', d3.forceManyBody().strength(-480))
+        .force('center', d3.forceCenter(width / 2, height / 2))
+        .on('tick', () => {
+          setSimNodes([...nodesCopy])
+          setSimLinks(
+            linksCopy
+              .filter((l: any) => l.source?.x && l.target?.x)
+              .map((l: any) => ({
+                source: { id: l.source.id, x: l.source.x, y: l.source.y },
+                target: { id: l.target.id, x: l.target.x, y: l.target.y },
+                type: l.type,
+                isCrossTopic: l.isCrossTopic,
+              }))
+          )
+        })
+      setViewBoxSize({ width, height })
+      return () => sim.stop()
+    }
+  }, [nodes, edges, width, height, layout])
 
   const getNodeColor = (node: NodeItem) => {
     if (mode === 'library') {
@@ -252,34 +357,34 @@ export function ConceptGraph({
     <div className="bg-surface rounded-xl p-4 border border-border flex flex-col items-center relative">
       <div className="w-full relative overflow-hidden rounded-lg bg-bg/50">
         <svg
-          viewBox={`0 0 ${width} ${height}`}
+          viewBox={`0 0 ${viewBoxSize.width} ${viewBoxSize.height}`}
           className="w-full h-[600px] select-none"
         >
           <defs>
-            {/* Hard prerequisite arrowhead - theme accent */}
+            {/* Hard prerequisite arrowhead - pointing from prerequisite down to dependent */}
             <marker
               id="arrowhead-accent"
               viewBox="0 -5 10 10"
-              refX="22"
+              refX="26"
               refY="0"
-              markerWidth="6"
-              markerHeight="6"
+              markerWidth="7"
+              markerHeight="7"
               orient="auto"
             >
-              <path d="M0,-5L10,0L0,5" fill={accentColor} />
+              <path d="M0,-4L8,0L0,4" fill={accentColor} />
             </marker>
 
             {/* Cross-topic / related arrowhead - muted */}
             <marker
               id="arrowhead-muted"
               viewBox="0 -5 10 10"
-              refX="22"
+              refX="26"
               refY="0"
-              markerWidth="6"
-              markerHeight="6"
+              markerWidth="7"
+              markerHeight="7"
               orient="auto"
             >
-              <path d="M0,-5L10,0L0,5" fill={mutedColor} />
+              <path d="M0,-4L8,0L0,4" fill={mutedColor} />
             </marker>
 
             {/* SVG Glow/Shadow Filter definitions - soft shadow in light mode, glow in dark mode */}

@@ -288,6 +288,7 @@ export default function GraphsPage() {
                 edges={allEdges}
                 width={1000}
                 height={650}
+                layout="force"
               />
 
               {/* Full Multi-Topic Legend */}
