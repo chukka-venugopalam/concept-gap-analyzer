@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import { AppShell } from '@/components/layout/AppShell'
 import { ConceptGraph, LIBRARY_COLORS, NodeItem, EdgeItem } from '@/components/graph/ConceptGraph'
+import { TopicClusterMap } from '@/components/graph/TopicClusterMap'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { topicsAPI } from '@/lib/api/topics'
 
@@ -26,12 +27,11 @@ export default function GraphsPage() {
   const [topicEdges, setTopicEdges] = useState<EdgeItem[]>([])
   const [topicLoading, setTopicLoading] = useState(true)
 
-  const [allNodes, setAllNodes] = useState<NodeItem[]>([])
-  const [allEdges, setAllEdges] = useState<EdgeItem[]>([])
-  const [allLoading, setAllLoading] = useState(false)
-  const [allLoaded, setAllLoaded] = useState(false)
-
   const [error, setError] = useState('')
+
+  const totalConceptCount = React.useMemo(() => {
+    return topics.reduce((sum, t) => sum + (t.concept_count || 0), 0) || 85
+  }, [topics])
 
   // Load topics dynamically
   useEffect(() => {
@@ -73,76 +73,6 @@ export default function GraphsPage() {
       loadTopicData()
     }
   }, [selectedTopicId, activeTab])
-
-  // Load all topics combined graph
-  useEffect(() => {
-    async function loadAllData() {
-      if (allLoaded) return
-      try {
-        setAllLoading(true)
-        setError('')
-
-        // Fetch all topics dynamically
-        const resTopics = await topicsAPI.getAll()
-        const topicList = Array.isArray(resTopics)
-          ? resTopics
-          : resTopics?.topics || resTopics?.data?.topics || []
-
-        if (!Array.isArray(topicList) || topicList.length === 0) {
-          return
-        }
-
-        const responses = await Promise.all(
-          topicList.map(async (t: any) => {
-            try {
-              const res = await topicsAPI.getLibrary(t.id)
-              const data = res?.data || res
-              const nodes: NodeItem[] = (data?.nodes || []).map((n: NodeItem) => ({
-                ...n,
-                topic_id: t.id,
-                topic_name: t.name,
-              }))
-              const edges: EdgeItem[] = (data?.edges || []).map((e: EdgeItem) => ({
-                ...e,
-                type: 'hard',
-                isCrossTopic: false,
-              }))
-              return { nodes, edges }
-            } catch {
-              return { nodes: [], edges: [] }
-            }
-          })
-        )
-
-        const combinedNodes: NodeItem[] = []
-        const combinedEdges: EdgeItem[] = []
-
-        responses.forEach((r) => {
-          combinedNodes.push(...r.nodes)
-          combinedEdges.push(...r.edges)
-        })
-
-        // Add valid cross-topic edges where both endpoints exist
-        const nodeIds = new Set(combinedNodes.map((n) => n.id))
-        const validCrossEdges = CROSS_TOPIC_EDGES.filter(
-          (e) => nodeIds.has(e.source) && nodeIds.has(e.target)
-        )
-        combinedEdges.push(...validCrossEdges)
-
-        setAllNodes(combinedNodes)
-        setAllEdges(combinedEdges)
-        setAllLoaded(true)
-      } catch (err: any) {
-        console.error('Failed loading all topic graphs:', err)
-        setError(err.message || 'Failed loading all topic graphs')
-      } finally {
-        setAllLoading(false)
-      }
-    }
-    if (activeTab === 'all') {
-      loadAllData()
-    }
-  }, [activeTab, allLoaded])
 
   return (
     <AppShell>
@@ -264,72 +194,27 @@ export default function GraphsPage() {
         </div>
       )}
 
-      {/* Tab 2: All Topics */}
+      {/* Tab 2: All Topics Cluster Map */}
       {activeTab === 'all' && (
         <div className="space-y-4">
           <div className="p-3 bg-surface rounded-lg border border-border text-xs text-secondary flex items-center justify-between flex-wrap gap-2">
             <span>
-              Combined concept graph across all {topics.length || 11} topics ({allNodes.length} concepts, {allEdges.length} connections).
+              Curriculum cluster map across all {topics.length || 11} topics ({totalConceptCount} concepts total). Click any topic bubble to open its detailed hierarchical graph.
             </span>
             <span className="font-mono text-muted text-[11px]">
-              Tip: Click any node to open its study details and practice problems.
+              Tip: Bubble size corresponds to concept count. Connecting lines show cross-topic bridges.
             </span>
           </div>
 
-          {allLoading ? (
-            <div className="space-y-4">
-              <Skeleton className="h-[650px] w-full" />
-            </div>
-          ) : (
-            <>
-              <ConceptGraph
-                mode="library"
-                nodes={allNodes}
-                edges={allEdges}
-                width={1000}
-                height={650}
-                layout="force"
-              />
-
-              {/* Full Multi-Topic Legend */}
-              <div className="bg-surface rounded-xl p-4 border border-border flex flex-wrap items-center justify-between gap-4 text-xs font-mono">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="w-3 h-3 rounded-full inline-block"
-                      style={{ backgroundColor: LIBRARY_COLORS[3] }}
-                    />
-                    <span className="text-secondary">Core / High Weight</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="w-3 h-3 rounded-full inline-block"
-                      style={{ backgroundColor: LIBRARY_COLORS[2] }}
-                    />
-                    <span className="text-secondary">Key Concept</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="w-3 h-3 rounded-full inline-block"
-                      style={{ backgroundColor: LIBRARY_COLORS[1] }}
-                    />
-                    <span className="text-secondary">Foundational</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <span className="w-6 h-0.5 bg-accent inline-block" />
-                    <span className="text-secondary">In-Topic Prerequisite</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-6 h-0.5 border-t border-dashed border-muted inline-block" />
-                    <span className="text-secondary">Cross-Topic Connection</span>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
+          <TopicClusterMap
+            topics={topics}
+            onSelectTopic={(topicId) => {
+              setSelectedTopicId(topicId)
+              setActiveTab('topic')
+            }}
+            width={1000}
+            height={640}
+          />
         </div>
       )}
     </AppShell>
