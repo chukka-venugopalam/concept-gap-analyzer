@@ -41,7 +41,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
           collapsed ? 'md:pl-[64px]' : 'md:pl-[240px]'
         }`}
       >
-        <main className="flex-1 max-w-3xl w-full mx-auto px-4 py-8">
+        <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-8">
           {children}
         </main>
       </div>
