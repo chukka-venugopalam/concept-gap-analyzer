@@ -6,7 +6,6 @@ import { usePathname, useRouter } from 'next/navigation'
 import { AnimatePresence, motion } from 'framer-motion'
 import { createClient } from '@/lib/supabase'
 import { usersAPI } from '@/lib/api/users'
-import { ThemeToggle } from '@/components/theme/ThemeToggle'
 
 export function Sidebar() {
   const pathname = usePathname()
@@ -236,8 +235,6 @@ export function Sidebar() {
 
       {/* Bottom section: User Profile / Sign Out */}
       <div className="p-3 border-t border-border space-y-2 relative">
-        <ThemeToggle collapsed={!isMobile && collapsed} />
-
         <div className="flex items-center justify-between">
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}

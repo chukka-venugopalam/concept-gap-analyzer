@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { Sidebar } from './Sidebar'
+import { Header } from './Header'
 import { CommandPalette } from '@/components/command/CommandPalette'
 import { Toaster } from 'sonner'
 
@@ -41,6 +42,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
           collapsed ? 'md:pl-[64px]' : 'md:pl-[240px]'
         }`}
       >
+        <Header />
         <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-8">
           {children}
         </main>
