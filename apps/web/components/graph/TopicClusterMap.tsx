@@ -36,7 +36,7 @@ export const TOPIC_CLUSTER_LINKS = [
   { source: 'binary_trees', target: 'tries', label: 'Prefix Hierarchies' },
   { source: 'arrays_hashing', target: 'heaps', label: 'Array Representation' },
 
-  // Pattern references connections
+  // Pattern references connections (from topic_pattern_references table)
   { source: 'patterns', target: 'arrays_hashing', label: 'Sliding Window & Two Pointers' },
   { source: 'patterns', target: 'linked_lists', label: 'Fast & Slow / Reversal' },
   { source: 'patterns', target: 'binary_trees', label: 'Tree BFS & DFS' },
@@ -44,12 +44,6 @@ export const TOPIC_CLUSTER_LINKS = [
   { source: 'patterns', target: 'heaps', label: 'Top K & Two Heaps' },
   { source: 'patterns', target: 'dynamic_programming', label: '0/1 Knapsack & Subsets' },
   { source: 'patterns', target: 'graphs', label: 'Topological Sort' },
-
-  // Structural & Algorithm connections
-  { source: 'stacks_queues', target: 'arrays_hashing', label: 'Monotonic Stack / Window' },
-  { source: 'stacks_queues', target: 'binary_trees', label: 'Iterative Traversal Stack' },
-  { source: 'sorting_fundamentals', target: 'arrays_hashing', label: 'Partition & Indexing' },
-  { source: 'sorting_fundamentals', target: 'heaps', label: 'Heap Sort' },
 ]
 
 function splitTopicName(name: string): [string, string?] {
