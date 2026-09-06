@@ -12,4 +12,7 @@ export const topicsAPI = {
 
   getLibrary: (topicId: string) =>
     api.get<any>(`/topics/${topicId}/library`),
+
+  getPatternReferences: (topicId: string) =>
+    api.get<any>(`/topics/${topicId}/pattern-references`),
 }

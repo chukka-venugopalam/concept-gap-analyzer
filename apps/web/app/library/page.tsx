@@ -1,10 +1,20 @@
 'use client'
 
 import React, { useEffect, useState, useMemo } from 'react'
+import Link from 'next/link'
 import { AppShell } from '@/components/layout/AppShell'
 import { Badge } from '@/components/ui/Badge'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { topicsAPI } from '@/lib/api/topics'
+
+interface PatternReference {
+  pattern_name: string
+  concept_id: string
+  concept_name: string
+  topic_id: string
+  topic_name: string
+  display_order?: number
+}
 
 interface PracticeProblem {
   platform: string
@@ -58,6 +68,9 @@ export default function LibraryPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  const [patternReferences, setPatternReferences] = useState<PatternReference[]>([])
+  const [loadingReferences, setLoadingReferences] = useState(false)
+
   // Load topics dynamically
   useEffect(() => {
     async function loadTopics() {
@@ -96,6 +109,28 @@ export default function LibraryPage() {
     }
   }, [selectedTopicId])
 
+  // Fetch pattern references when selected topic is 'patterns'
+  useEffect(() => {
+    async function loadPatternReferences() {
+      if (selectedTopicId !== 'patterns') {
+        setPatternReferences([])
+        return
+      }
+      try {
+        setLoadingReferences(true)
+        const res = await topicsAPI.getPatternReferences('patterns')
+        const list = Array.isArray(res) ? res : res?.references || []
+        setPatternReferences(list)
+      } catch (err) {
+        console.error('Failed loading pattern references:', err)
+        setPatternReferences([])
+      } finally {
+        setLoadingReferences(false)
+      }
+    }
+    loadPatternReferences()
+  }, [selectedTopicId])
+
   const currentTopic = topics.find((t) => t.id === selectedTopicId) || topics[0] || { id: selectedTopicId, name: selectedTopicId }
 
   const filteredConcepts = useMemo(() => {
@@ -108,6 +143,51 @@ export default function LibraryPage() {
         (c.real_world_example && c.real_world_example.toLowerCase().includes(q))
     )
   }, [concepts, searchQuery])
+
+  // Group pattern references by pattern_name (e.g. Tree DFS has 3 concepts)
+  const groupedReferences = useMemo(() => {
+    const groups: {
+      pattern_name: string
+      topic_id: string
+      topic_name: string
+      display_order: number
+      concepts: { concept_id: string; concept_name: string; topic_id: string; topic_name: string }[]
+    }[] = []
+
+    const map = new Map<string, typeof groups[0]>()
+
+    for (const ref of patternReferences) {
+      if (!map.has(ref.pattern_name)) {
+        const item = {
+          pattern_name: ref.pattern_name,
+          topic_id: ref.topic_id,
+          topic_name: ref.topic_name,
+          display_order: ref.display_order ?? 0,
+          concepts: [],
+        }
+        map.set(ref.pattern_name, item)
+        groups.push(item)
+      }
+      map.get(ref.pattern_name)!.concepts.push({
+        concept_id: ref.concept_id,
+        concept_name: ref.concept_name,
+        topic_id: ref.topic_id,
+        topic_name: ref.topic_name,
+      })
+    }
+    return groups
+  }, [patternReferences])
+
+  const filteredPatternGroups = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
+    if (!q) return groupedReferences
+    return groupedReferences.filter(
+      (g) =>
+        g.pattern_name.toLowerCase().includes(q) ||
+        g.topic_name.toLowerCase().includes(q) ||
+        g.concepts.some((c) => c.concept_name.toLowerCase().includes(q))
+    )
+  }, [groupedReferences, searchQuery])
 
   const getDifficultyBadge = (difficulty: string) => {
     const diff = (difficulty || '').toLowerCase()
@@ -368,6 +448,67 @@ export default function LibraryPage() {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* Cross-Topic Pattern References Section (only for 'patterns' topic) */}
+      {selectedTopicId === 'patterns' && (
+        <div className="mt-10 pt-8 border-t border-border">
+          <div className="mb-4">
+            <span className="text-xs uppercase font-mono tracking-widest text-secondary font-semibold block mb-1">
+              Cross-Topic References
+            </span>
+            <h2 className="font-display font-bold text-xl text-primary">
+              Also part of this pattern family
+            </h2>
+            <p className="text-xs text-secondary mt-1">
+              These patterns are covered in depth within their primary data structure topics, but are fundamental members of the canonical 16-pattern list.
+            </p>
+          </div>
+
+          {loadingReferences ? (
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          ) : filteredPatternGroups.length === 0 ? (
+            <div className="p-4 rounded-lg border border-border bg-surface/30 text-center text-xs text-secondary">
+              No referenced patterns match &quot;{searchQuery}&quot;.
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {filteredPatternGroups.map((group) => (
+                <div
+                  key={group.pattern_name}
+                  className="p-3 md:p-3.5 rounded-lg border border-border bg-surface/30 hover:bg-surface/60 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
+                    <span className="font-display font-semibold text-sm text-primary">
+                      {group.pattern_name}
+                    </span>
+                    <span className="text-[11px] text-secondary font-mono">
+                      (in {group.topic_name})
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {group.concepts.map((concept) => (
+                      <Link
+                        key={concept.concept_id}
+                        href={`/topics/${concept.topic_id}/library`}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs bg-surface-2 border border-border text-secondary hover:text-primary hover:border-accent transition-colors group"
+                      >
+                        <span>{concept.concept_name}</span>
+                        <span className="text-[10px] text-muted group-hover:text-accent">↗</span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </AppShell>

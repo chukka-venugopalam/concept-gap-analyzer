@@ -154,3 +154,46 @@ async def get_topic_library(
             "edges": edge_list
         }
     }
+
+@router.get("/{topic_id}/pattern-references")
+async def get_pattern_references(
+    topic_id: str,
+    user: CurrentUser = Depends(get_current_user),
+    db=Depends(get_db)
+):
+    topic = await topic_repo.get_by_id(db, topic_id)
+    if not topic:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "topic_not_found",
+                "message": f"Topic '{topic_id}' not found"
+            }
+        )
+    rows = await db.fetch("""
+        SELECT
+            pr.pattern_name,
+            pr.covered_concept_id AS concept_id,
+            c.name              AS concept_name,
+            c.topic_id,
+            t.name              AS topic_name,
+            pr.display_order
+        FROM topic_pattern_references pr
+        JOIN concepts c ON c.id = pr.covered_concept_id
+        JOIN topics   t ON t.id = c.topic_id
+        WHERE pr.topic_id = $1
+        ORDER BY pr.display_order, c.name
+    """, topic_id)
+    return {
+        "data": [
+            {
+                "pattern_name": r["pattern_name"],
+                "concept_id": r["concept_id"],
+                "concept_name": r["concept_name"],
+                "topic_id": r["topic_id"],
+                "topic_name": r["topic_name"],
+                "display_order": r.get("display_order", 0)
+            }
+            for r in rows
+        ]
+    }
