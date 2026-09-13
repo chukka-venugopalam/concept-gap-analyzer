@@ -258,4 +258,6 @@ async def finish_mock_interview(
         db, session_id, body.final_code, duration_seconds,
         eval_result.rubric_scores, eval_result.score_overall,
     )
-    return {"data": dict(result)}
+    result = dict(result)
+    result["rubric_scores"] = _parse_jsonb(result.get("rubric_scores"), {})
+    return {"data": result}
