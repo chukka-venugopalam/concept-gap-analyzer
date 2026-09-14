@@ -11,3 +11,9 @@ venv/
 *.egg-info/
 .turbo/
 .vercel/
+
+# Temporary / scratch artifacts
+scratch/
+cip.zip
+cip_extracted/
+
