@@ -35,6 +35,7 @@ export const TOPIC_CLUSTER_LINKS = [
   { source: 'arrays_hashing', target: 'graphs', label: 'Visited Tracking' },
   { source: 'binary_trees', target: 'tries', label: 'Prefix Hierarchies' },
   { source: 'arrays_hashing', target: 'heaps', label: 'Array Representation' },
+  { source: 'advanced_trees', target: 'arrays_hashing', label: 'Array-Backed Range Queries' },
 
   // Pattern references connections (from topic_pattern_references table)
   { source: 'patterns', target: 'arrays_hashing', label: 'Sliding Window & Two Pointers' },
@@ -287,7 +288,7 @@ export function TopicClusterMap({
             <span className="font-semibold text-primary uppercase tracking-wider text-[10px]">
               Curriculum Cluster Map
             </span>
-            <span className="text-[10px] text-accent font-semibold">11 Domains</span>
+            <span className="text-[10px] text-accent font-semibold">{topics.length} Domains</span>
           </div>
           <p className="text-secondary text-[11px] leading-relaxed">
             Bubbles represent complete diagnostic domains, sized by concept density.
