@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { AnimatePresence, motion } from 'framer-motion'
 import { createClient } from '@/lib/supabase'
 import { usersAPI } from '@/lib/api/users'
+import { TrendingUp } from 'lucide-react'
 
 export function Sidebar() {
   const pathname = usePathname()
@@ -107,6 +108,11 @@ export function Sidebar() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.5 6h7M7.5 8.2l3 7.6M16.5 8.2l-3 7.6" />
         </svg>
       ),
+    },
+    {
+      name: 'Insights',
+      href: '/insights',
+      icon: <TrendingUp className="w-5 h-5" />,
     },
     {
       name: 'Library',
